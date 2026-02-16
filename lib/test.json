@@ -1,0 +1,29 @@
+{
+  "metadata": {
+    "total_gestures": 50,
+    "sequence_length": 10,
+    "exported_at": "2025-11-29T..."
+  },
+  "gestures": [
+    {
+      "label": "poing_ferme",
+      "recorded_at": "2025-11-29T...",
+      "samples": [
+        {
+          "flex1": [1234, 2345, ...],
+          "imu1": {"ax": 100, "ay": 200, ...},
+          "flex2": [3456, 4567, ...],
+          "imu2": {"ax": 150, "ay": 250, ...},
+          "timestamp": 1234567890
+        },
+        {
+          "flex1": [1234, 2345, ...],
+          "imu1": {"ax": 100, "ay": 200, ...},
+          "flex2": [3456, 4567, ...],
+          "imu2": {"ax": 150, "ay": 250, ...},
+          "timestamp": 1234567890
+        }
+      ]
+    }
+  ]
+}
