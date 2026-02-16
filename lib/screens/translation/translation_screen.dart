@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_tts/flutter_tts.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/constants/app_colors.dart';
@@ -12,8 +13,7 @@ import '../../widgets/common/gradient_button.dart';
 import '../../widgets/common/section_header.dart';
 import '../../widgets/common/status_indicator.dart';
 
-/// The Translation tab — redesigned with hero panel, phrase bar,
-/// manual & auto translation modes.
+/// The Translation tab — exclusive manual/auto modes with diamond button layout.
 class TranslationScreen extends StatefulWidget {
   const TranslationScreen({super.key});
 
@@ -23,16 +23,43 @@ class TranslationScreen extends StatefulWidget {
 
 class _TranslationScreenState extends State<TranslationScreen> {
   final List<String> _phraseWords = [];
+  final FlutterTts _tts = FlutterTts();
+  bool _ttsEnabled = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initTts();
+  }
+
+  Future<void> _initTts() async {
+    await _tts.setLanguage('fr-FR');
+    await _tts.setSpeechRate(0.5);
+    await _tts.setVolume(1.0);
+  }
+
+  @override
+  void dispose() {
+    _tts.stop();
+    super.dispose();
+  }
 
   void _addWordToPhrase(String? output) {
     if (output == null) return;
-    // Extract just the first word/class from "harmony 95.2% | appeler 4.8%"
     final word = output.split(' ').first.trim();
     if (word.isNotEmpty &&
         word != 'Aucune' &&
         word != 'Erreur' &&
         word != 'Modele') {
       setState(() => _phraseWords.add(word));
+    }
+  }
+
+  Future<void> _speakPrediction(String? output) async {
+    if (output == null) return;
+    final word = output.split(' ').first.trim();
+    if (word.isNotEmpty) {
+      await _tts.speak(word);
     }
   }
 
@@ -43,7 +70,9 @@ class _TranslationScreenState extends State<TranslationScreen> {
     final conn = context.watch<ConnectionProvider>();
 
     // Determine the latest prediction from either mode
-    final latestOutput = t.autoOutput ?? t.manualOutput;
+    final latestOutput = t.activeMode == TranslationMode.auto
+        ? t.autoOutput
+        : t.manualOutput;
     final hasResult = latestOutput != null;
 
     // Parse prediction: "harmony 95.2% | appeler 4.8%"
@@ -79,14 +108,21 @@ class _TranslationScreenState extends State<TranslationScreen> {
           // ── Status Row ──
           _buildStatusRow(c, t, conn),
 
-          // ── Manual Translation ──
-          _buildManualSection(c, t),
+          // ── Mode Toggle ──
+          _buildModeToggle(c, t),
 
-          // ── Auto Translation ──
-          _buildAutoSection(c, t),
+          // ── Active mode content (only one visible) ──
+          if (t.activeMode == TranslationMode.manual)
+            _buildManualSection(c, t, conn),
 
-          // ── History ──
-          if (t.autoHistory.isNotEmpty) _buildHistory(c, t),
+          if (t.activeMode == TranslationMode.auto) ...[
+            _buildAutoSection(c, t),
+            if (t.autoHistory.isNotEmpty) _buildHistory(c, t),
+          ],
+
+          // ── Placeholder when no mode selected ──
+          if (t.activeMode == TranslationMode.none)
+            _buildNoModeHint(c),
 
           const SizedBox(height: 24),
         ],
@@ -128,7 +164,6 @@ class _TranslationScreenState extends State<TranslationScreen> {
       ),
       child: Column(
         children: [
-          // Predicted word (large)
           Text(
             hasResult ? word : 'harmony',
             style: TextStyle(
@@ -140,7 +175,6 @@ class _TranslationScreenState extends State<TranslationScreen> {
           ),
           if (hasResult && confidence.isNotEmpty) ...[
             const SizedBox(height: 12),
-            // Confidence bar
             SizedBox(
               width: 200,
               child: Column(
@@ -213,6 +247,25 @@ class _TranslationScreenState extends State<TranslationScreen> {
           ),
           const SizedBox(width: 8),
           GestureDetector(
+            onTap: () async {
+              final phrase = _phraseWords.join(' ');
+              await _tts.speak(phrase);
+            },
+            child: Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: c.primary.withAlpha(20),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                Icons.volume_up_rounded,
+                color: c.primary,
+                size: 18,
+              ),
+            ),
+          ),
+          const SizedBox(width: 6),
+          GestureDetector(
             onTap: () => setState(() => _phraseWords.clear()),
             child: Container(
               padding: const EdgeInsets.all(6),
@@ -238,6 +291,12 @@ class _TranslationScreenState extends State<TranslationScreen> {
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         children: [
+          StatusIndicator(
+            active: conn.isConnected,
+            label: conn.isConnected ? 'ESP32' : 'Hors ligne',
+            activeColor: c.success,
+            inactiveColor: c.error,
+          ),
           const SizedBox(width: 12),
           StatusIndicator(
             active: t.modelReady,
@@ -258,7 +317,142 @@ class _TranslationScreenState extends State<TranslationScreen> {
     );
   }
 
-  Widget _buildManualSection(HarmonyColors c, TranslationProvider t) {
+  Widget _buildModeToggle(HarmonyColors c, TranslationProvider t) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        children: [
+          Expanded(
+            child: GestureDetector(
+              onTap: () {
+                if (t.activeMode == TranslationMode.manual) {
+                  // Already manual — deselect (but keep mode for state)
+                  return;
+                }
+                t.setManualMode();
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                decoration: BoxDecoration(
+                  gradient: t.activeMode == TranslationMode.manual
+                      ? c.primaryGradient
+                      : null,
+                  color: t.activeMode == TranslationMode.manual
+                      ? null
+                      : c.surface,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: t.activeMode == TranslationMode.manual
+                        ? Colors.transparent
+                        : c.glassBorder,
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.front_hand_rounded,
+                      color: t.activeMode == TranslationMode.manual
+                          ? Colors.white
+                          : c.textHint,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Manuel',
+                      style: TextStyle(
+                        color: t.activeMode == TranslationMode.manual
+                            ? Colors.white
+                            : c.textSecondary,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: GestureDetector(
+              onTap: () {
+                if (t.activeMode == TranslationMode.auto) {
+                  return;
+                }
+                t.setAutoMode();
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                decoration: BoxDecoration(
+                  gradient: t.activeMode == TranslationMode.auto
+                      ? c.successGradient
+                      : null,
+                  color: t.activeMode == TranslationMode.auto
+                      ? null
+                      : c.surface,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: t.activeMode == TranslationMode.auto
+                        ? Colors.transparent
+                        : c.glassBorder,
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.auto_awesome_rounded,
+                      color: t.activeMode == TranslationMode.auto
+                          ? Colors.white
+                          : c.textHint,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Temps reel',
+                      style: TextStyle(
+                        color: t.activeMode == TranslationMode.auto
+                            ? Colors.white
+                            : c.textSecondary,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNoModeHint(HarmonyColors c) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 32),
+      child: Column(
+        children: [
+          Icon(Icons.touch_app_rounded, color: c.textHint, size: 48),
+          const SizedBox(height: 12),
+          Text(
+            'Choisissez un mode de traduction',
+            style: TextStyle(color: c.textHint, fontSize: 15),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Manual mode: diamond button layout ──
+
+  Widget _buildManualSection(
+      HarmonyColors c, TranslationProvider t, ConnectionProvider conn) {
+    final canAct = t.modelReady && conn.isConnected;
+
     return GlassCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -268,11 +462,15 @@ class _TranslationScreenState extends State<TranslationScreen> {
             icon: Icons.front_hand_rounded,
             trailing: StatusIndicator(
               active: t.isManualRecording,
-              label: t.isManualRecording ? 'REC' : 'PAUSE',
+              label: t.isManualRecording
+                  ? 'REC'
+                  : t.hasManualFrames
+                      ? '${t.manualFrameCount} frames'
+                      : 'PRET',
               activeColor: c.error,
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
 
           // Frame counter
           Row(
@@ -283,55 +481,32 @@ class _TranslationScreenState extends State<TranslationScreen> {
                 '${t.manualFrameCount} frames captures',
                 style: TextStyle(color: c.textSecondary, fontSize: 13),
               ),
+              if (t.manualInferenceInFlight) ...[
+                const SizedBox(width: 12),
+                SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation(c.accent),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  'Analyse...',
+                  style: TextStyle(color: c.accent, fontSize: 12),
+                ),
+              ],
             ],
           ),
           const SizedBox(height: 16),
 
-          // Controls
-          Row(
-            children: [
-              GradientButton(
-                label: t.isManualRecording ? 'Stop' : 'Enregistrer',
-                icon: t.isManualRecording
-                    ? Icons.stop_rounded
-                    : Icons.play_arrow_rounded,
-                gradient: t.isManualRecording
-                    ? c.dangerGradient
-                    : c.primaryGradient,
-                onPressed: t.modelReady ? t.toggleManualTranslation : null,
-              ),
-              if (t.manualInferenceInFlight) ...[
-                const SizedBox(width: 16),
-                SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2.5,
-                    valueColor: AlwaysStoppedAnimation(c.accent),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'Analyse...',
-                  style: TextStyle(color: c.accent, fontSize: 13),
-                ),
-              ],
-              const Spacer(),
-              // Add to phrase button
-              if (t.manualOutput != null)
-                GradientButton(
-                  label: 'Ajouter',
-                  icon: Icons.add_rounded,
-                  compact: true,
-                  gradient: c.successGradient,
-                  onPressed: () => _addWordToPhrase(t.manualOutput),
-                ),
-            ],
-          ),
-          const SizedBox(height: 12),
+          // ── Diamond button layout ──
+          _buildDiamondControls(c, t, canAct),
 
           // Output
-          if (t.manualOutput != null)
+          if (t.manualOutput != null) ...[
+            const SizedBox(height: 16),
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(14),
@@ -340,19 +515,161 @@ class _TranslationScreenState extends State<TranslationScreen> {
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(color: c.glassBorder),
               ),
-              child: Text(
-                t.manualOutput!,
-                style: TextStyle(
-                  color: c.accent,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      t.manualOutput!,
+                      style: TextStyle(
+                        color: c.accent,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  GestureDetector(
+                    onTap: () => _addWordToPhrase(t.manualOutput),
+                    child: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: c.success.withAlpha(20),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(Icons.add_rounded,
+                          color: c.success, size: 18),
+                    ),
+                  ),
+                ],
               ),
             ),
+          ],
         ],
       ),
     );
   }
+
+  /// Diamond/losange layout: REC (north), PREDIRE (west), RESET (east),
+  /// STOP (south), TTS (center).
+  Widget _buildDiamondControls(
+      HarmonyColors c, TranslationProvider t, bool canAct) {
+    const double size = 220;
+    const double btnSize = 56;
+
+    // Button states
+    final canRec = canAct && !t.isManualRecording && !t.manualInferenceInFlight;
+    final canStop = t.isManualRecording;
+    final canPredict =
+        canAct && t.hasManualFrames && !t.manualInferenceInFlight;
+    final canReset = !t.isManualRecording &&
+        (t.manualOutput != null || t.manualFrameCount > 0);
+
+    return Center(
+      child: SizedBox(
+        width: size,
+        height: size,
+        child: Stack(
+          children: [
+            // REC — North
+            Positioned(
+              left: (size - btnSize) / 2,
+              top: 0,
+              child: _DiamondButton(
+                icon: Icons.fiber_manual_record_rounded,
+                label: 'REC',
+                color: c.error,
+                gradient: c.dangerGradient,
+                size: btnSize,
+                enabled: canRec,
+                onTap: canRec ? t.startRecording : null,
+              ),
+            ),
+            // PREDIRE — West
+            Positioned(
+              left: 0,
+              top: (size - btnSize) / 2,
+              child: _DiamondButton(
+                icon: Icons.psychology_rounded,
+                label: 'Predire',
+                color: c.accent,
+                gradient: c.primaryGradient,
+                size: btnSize,
+                enabled: canPredict,
+                onTap: canPredict ? () => t.predict() : null,
+              ),
+            ),
+            // RESET — East
+            Positioned(
+              right: 0,
+              top: (size - btnSize) / 2,
+              child: _DiamondButton(
+                icon: Icons.refresh_rounded,
+                label: 'Reset',
+                color: c.warning,
+                gradient: LinearGradient(
+                  colors: [c.warning, c.warning.withAlpha(180)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                size: btnSize,
+                enabled: canReset,
+                onTap: canReset ? t.resetManual : null,
+              ),
+            ),
+            // STOP — South
+            Positioned(
+              left: (size - btnSize) / 2,
+              bottom: 0,
+              child: _DiamondButton(
+                icon: Icons.stop_rounded,
+                label: 'Stop',
+                color: c.textSecondary,
+                gradient: LinearGradient(
+                  colors: [c.textSecondary, c.textHint],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                size: btnSize,
+                enabled: canStop,
+                onTap: canStop ? t.stopRecording : null,
+              ),
+            ),
+            // TTS — Center
+            Positioned(
+              left: (size - btnSize) / 2,
+              top: (size - btnSize) / 2,
+              child: _DiamondButton(
+                icon: _ttsEnabled
+                    ? Icons.volume_up_rounded
+                    : Icons.volume_off_rounded,
+                label: 'TTS',
+                color: c.primary,
+                gradient: _ttsEnabled
+                    ? c.successGradient
+                    : LinearGradient(
+                        colors: [c.surface, c.card],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                size: btnSize,
+                enabled: true,
+                outlined: !_ttsEnabled,
+                borderColor: c.glassBorder,
+                onTap: () {
+                  setState(() => _ttsEnabled = !_ttsEnabled);
+                  if (_ttsEnabled && t.manualOutput != null) {
+                    _speakPrediction(t.manualOutput);
+                  }
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Auto mode ──
 
   Widget _buildAutoSection(HarmonyColors c, TranslationProvider t) {
     final bufferProgress =
@@ -534,6 +851,75 @@ class _TranslationScreenState extends State<TranslationScreen> {
             );
           }),
         ],
+      ),
+    );
+  }
+}
+
+/// A circular button used in the diamond/losange layout.
+class _DiamondButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final Gradient gradient;
+  final double size;
+  final bool enabled;
+  final bool outlined;
+  final Color? borderColor;
+  final VoidCallback? onTap;
+
+  const _DiamondButton({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.gradient,
+    required this.size,
+    required this.enabled,
+    this.outlined = false,
+    this.borderColor,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final effectiveOpacity = enabled ? 1.0 : 0.35;
+
+    return AnimatedOpacity(
+      opacity: effectiveOpacity,
+      duration: const Duration(milliseconds: 200),
+      child: GestureDetector(
+        onTap: enabled ? onTap : null,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: size,
+              height: size,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: outlined ? null : gradient,
+                color: outlined ? Colors.transparent : null,
+                border: outlined
+                    ? Border.all(color: borderColor ?? color, width: 2)
+                    : null,
+                boxShadow: enabled && !outlined
+                    ? [
+                        BoxShadow(
+                          color: color.withAlpha(60),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ]
+                    : null,
+              ),
+              child: Icon(
+                icon,
+                color: outlined ? color : Colors.white,
+                size: size * 0.42,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

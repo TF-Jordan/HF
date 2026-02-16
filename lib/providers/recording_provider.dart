@@ -20,6 +20,7 @@ class RecordingProvider extends ChangeNotifier {
 
   String selectedLabel = AppConstants.defaultLabels.first;
   bool isRecording = false;
+  bool isPaused = false;
   int sessionId = 0;
   int sessionSamples = 0;
   int totalSamples = 0;
@@ -58,6 +59,7 @@ class RecordingProvider extends ChangeNotifier {
     sessionId += 1;
     sessionSamples = 0;
     isRecording = true;
+    isPaused = false;
     _captureStopwatch.reset();
     _captureStopwatch.start();
     _startNewSample();
@@ -80,7 +82,7 @@ class RecordingProvider extends ChangeNotifier {
   }
 
   void _onFrame(int timestampMs) {
-    if (!isRecording || _currentSample == null) return;
+    if (!isRecording || isPaused || _currentSample == null) return;
 
     final sample = _currentSample!;
     if (sample.startTimestampMs < 0) {
@@ -110,8 +112,47 @@ class RecordingProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Pause the current recording (frames are ignored but sample is kept).
+  void pauseRecording() {
+    if (!isRecording || isPaused) return;
+    isPaused = true;
+    _captureStopwatch.stop();
+    notifyListeners();
+  }
+
+  /// Resume recording after pause.
+  void resumeRecording() {
+    if (!isRecording || !isPaused) return;
+    isPaused = false;
+    _captureStopwatch.start();
+    notifyListeners();
+  }
+
+  /// Cancel the current recording and discard the sample.
+  void cancelRecording() {
+    if (!isRecording && _currentSample == null) return;
+    // Remove the current sample from samplesByLabel
+    if (_currentSample != null) {
+      final samples = samplesByLabel[selectedLabel];
+      if (samples != null && samples.contains(_currentSample)) {
+        samples.remove(_currentSample);
+        totalSamples = totalSamples > 0 ? totalSamples - 1 : 0;
+        labelCounts[selectedLabel] =
+            ((labelCounts[selectedLabel] ?? 1) - 1).clamp(0, 999999);
+      }
+    }
+    isRecording = false;
+    isPaused = false;
+    _captureStopwatch.stop();
+    _captureStopwatch.reset();
+    sessionSamples = 0;
+    _currentSample = null;
+    notifyListeners();
+  }
+
   void _stopRecording() {
     isRecording = false;
+    isPaused = false;
     _captureStopwatch.stop();
     _currentSample = null;
   }
@@ -210,6 +251,7 @@ class RecordingProvider extends ChangeNotifier {
     sessionSamples = 0;
     _currentSample = null;
     isRecording = false;
+    isPaused = false;
     lastExportPath = null;
     notifyListeners();
   }

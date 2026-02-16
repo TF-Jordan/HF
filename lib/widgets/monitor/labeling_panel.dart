@@ -56,9 +56,9 @@ class _LabelingPanelState extends State<LabelingPanel> {
     final conn = context.watch<ConnectionProvider>();
 
     // Manage chrono timer based on recording state
-    if (rec.isRecording && _chronoTimer == null) {
+    if (rec.isRecording && !rec.isPaused && _chronoTimer == null) {
       _startChronoTimer();
-    } else if (!rec.isRecording && _chronoTimer != null) {
+    } else if ((!rec.isRecording || rec.isPaused) && _chronoTimer != null) {
       _stopChronoTimer();
     }
 
@@ -77,8 +77,12 @@ class _LabelingPanelState extends State<LabelingPanel> {
             icon: Icons.data_array_rounded,
             trailing: StatusIndicator(
               active: rec.isRecording,
-              label: rec.isRecording ? 'REC' : 'PAUSE',
-              activeColor: c.error,
+              label: rec.isPaused
+                  ? 'PAUSE'
+                  : rec.isRecording
+                      ? 'REC'
+                      : 'PRET',
+              activeColor: rec.isPaused ? c.warning : c.error,
             ),
           ),
           const SizedBox(height: 16),
@@ -90,7 +94,7 @@ class _LabelingPanelState extends State<LabelingPanel> {
             children: rec.labels.map((label) {
               final selected = rec.selectedLabel == label;
               return GestureDetector(
-                onTap: () => rec.selectLabel(label),
+                onTap: rec.isRecording ? null : () => rec.selectLabel(label),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
                   padding: const EdgeInsets.symmetric(
@@ -169,33 +173,45 @@ class _LabelingPanelState extends State<LabelingPanel> {
                     padding: const EdgeInsets.symmetric(
                         horizontal: 16, vertical: 10),
                     decoration: BoxDecoration(
-                      color: rec.isRecording
-                          ? c.error.withAlpha(20)
-                          : c.success.withAlpha(20),
+                      color: rec.isPaused
+                          ? c.warning.withAlpha(20)
+                          : rec.isRecording
+                              ? c.error.withAlpha(20)
+                              : c.success.withAlpha(20),
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(
-                        color: rec.isRecording
-                            ? c.error.withAlpha(60)
-                            : c.success.withAlpha(60),
+                        color: rec.isPaused
+                            ? c.warning.withAlpha(60)
+                            : rec.isRecording
+                                ? c.error.withAlpha(60)
+                                : c.success.withAlpha(60),
                       ),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(
-                          rec.isRecording
-                              ? Icons.timer_rounded
-                              : Icons.timer_off_rounded,
-                          color: rec.isRecording ? c.error : c.success,
+                          rec.isPaused
+                              ? Icons.pause_rounded
+                              : rec.isRecording
+                                  ? Icons.timer_rounded
+                                  : Icons.timer_off_rounded,
+                          color: rec.isPaused
+                              ? c.warning
+                              : rec.isRecording
+                                  ? c.error
+                                  : c.success,
                           size: 20,
                         ),
                         const SizedBox(width: 8),
                         Text(
                           _formatDuration(rec.captureElapsed),
                           style: TextStyle(
-                            color: rec.isRecording
-                                ? c.error
-                                : c.success,
+                            color: rec.isPaused
+                                ? c.warning
+                                : rec.isRecording
+                                    ? c.error
+                                    : c.success,
                             fontSize: 22,
                             fontWeight: FontWeight.w800,
                             fontFeatures: const [
@@ -230,31 +246,23 @@ class _LabelingPanelState extends State<LabelingPanel> {
               child: LinearProgressIndicator(
                 value: progress,
                 backgroundColor: c.surface,
-                valueColor: AlwaysStoppedAnimation(c.accent),
+                valueColor: AlwaysStoppedAnimation(
+                  rec.isPaused ? c.warning : c.accent,
+                ),
                 minHeight: 6,
               ),
             ),
             const SizedBox(height: 16),
           ],
 
-          // Recording control button
-          GradientButton(
-            label: rec.isRecording
-                ? 'Collecte en cours...'
-                : 'Collecter $targetPoints pts',
-            icon: rec.isRecording
-                ? Icons.hourglass_top_rounded
-                : Icons.play_arrow_rounded,
-            gradient: rec.isRecording
-                ? c.dangerGradient
-                : c.primaryGradient,
-            onPressed: conn.isConnected && !rec.isRecording
-                ? rec.startRecording
-                : null,
-          ),
+          // ── Control buttons: Collecte / Pause / Supprimer ──
+          if (rec.isRecording)
+            _buildRecordingControls(c, rec)
+          else
+            _buildStartButton(c, rec, conn),
 
           // Clear button
-          if (rec.totalSamples > 0) ...[
+          if (rec.totalSamples > 0 && !rec.isRecording) ...[
             const SizedBox(height: 12),
             Align(
               alignment: Alignment.centerLeft,
@@ -287,6 +295,55 @@ class _LabelingPanelState extends State<LabelingPanel> {
           ],
         ],
       ),
+    );
+  }
+
+  /// Three buttons during active recording: Pause/Reprendre + Supprimer.
+  Widget _buildRecordingControls(HarmonyColors c, RecordingProvider rec) {
+    return Row(
+      children: [
+        // Pause / Resume
+        Expanded(
+          child: GradientButton(
+            label: rec.isPaused ? 'Reprendre' : 'Pause',
+            icon: rec.isPaused
+                ? Icons.play_arrow_rounded
+                : Icons.pause_rounded,
+            gradient: rec.isPaused
+                ? c.successGradient
+                : LinearGradient(
+                    colors: [c.warning, c.warning.withAlpha(180)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+            onPressed: rec.isPaused
+                ? rec.resumeRecording
+                : rec.pauseRecording,
+          ),
+        ),
+        const SizedBox(width: 12),
+        // Cancel / Delete
+        Expanded(
+          child: GradientButton(
+            label: 'Supprimer',
+            icon: Icons.delete_forever_rounded,
+            gradient: c.dangerGradient,
+            onPressed: rec.cancelRecording,
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Start button when not recording.
+  Widget _buildStartButton(
+      HarmonyColors c, RecordingProvider rec, ConnectionProvider conn) {
+    final targetPoints = rec.collectionTargetPoints;
+    return GradientButton(
+      label: 'Collecter $targetPoints pts',
+      icon: Icons.play_arrow_rounded,
+      gradient: c.primaryGradient,
+      onPressed: conn.isConnected ? rec.startRecording : null,
     );
   }
 }
