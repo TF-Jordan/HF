@@ -531,24 +531,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
               }
             },
           ),
-          const SizedBox(height: 16),
-          _InfoRow(
-            label: 'Taille du batch (traduction)',
-            value: '${AppConstants.translationBatchSize}',
-            c: c,
-          ),
-          const SizedBox(height: 8),
-          _InfoRow(
-            label: 'Capteurs par gant',
-            value: '${AppConstants.sensorCountPerDevice}',
-            c: c,
-          ),
-          const SizedBox(height: 8),
-          _InfoRow(
-            label: 'Features par frame',
-            value: '${AppConstants.numFeatures}',
-            c: c,
-          ),
         ],
       ),
     );
@@ -591,18 +573,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
               style: TextStyle(color: c.error, fontSize: 12),
             ),
           ],
-          const SizedBox(height: 12),
-          _InfoRow(
-            label: 'Classes',
-            value: AppConstants.gestureClasses.join(', '),
-            c: c,
-          ),
-          const SizedBox(height: 8),
-          _InfoRow(
-            label: 'Sequence max',
-            value: '${AppConstants.maxSequenceLength} frames',
-            c: c,
-          ),
         ],
       ),
     );
@@ -617,10 +587,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SectionHeader(
-            title: 'Export des donnees',
+            title: 'Export des données (JSON)',
             icon: Icons.save_alt_rounded,
             trailing: Text(
-              '${rec.totalSamples} echantillons',
+              '${rec.totalSamples} échantillons',
               style: TextStyle(
                 color: c.textSecondary,
                 fontSize: 13,
@@ -633,7 +603,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             children: [
               Expanded(
                 child: GradientButton(
-                  label: 'Copier JSON',
+                  label: 'Copier',
                   icon: Icons.copy_rounded,
                   gradient: c.successGradient,
                   onPressed: rec.totalSamples > 0
@@ -655,7 +625,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               const SizedBox(width: 8),
               Expanded(
                 child: GradientButton(
-                  label: 'Exporter fichier',
+                  label: 'Exporter',
                   icon: Icons.file_download_rounded,
                   gradient: c.successGradient,
                   onPressed: rec.totalSamples > 0
@@ -723,12 +693,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _InfoRow(
             label: 'Description',
             value: AppConstants.appTagline,
-            c: c,
-          ),
-          const SizedBox(height: 8),
-          _InfoRow(
-            label: 'Plateforme',
-            value: 'Flutter / Dart',
             c: c,
           ),
         ],

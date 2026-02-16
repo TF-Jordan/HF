@@ -238,12 +238,6 @@ class _TranslationScreenState extends State<TranslationScreen> {
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         children: [
-          StatusIndicator(
-            active: conn.isConnected,
-            label: conn.isConnected ? 'ESP32' : 'Hors ligne',
-            activeColor: c.success,
-            inactiveColor: c.error,
-          ),
           const SizedBox(width: 12),
           StatusIndicator(
             active: t.modelReady,
