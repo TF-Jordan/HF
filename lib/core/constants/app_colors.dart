@@ -40,6 +40,9 @@ class HarmonyColors extends ThemeExtension<HarmonyColors> {
   // ── Finger colors for flex sensor display ──
   final List<Color> fingerColors;
 
+  // ── Background image ──
+  final String backgroundImage;
+
   // ── Brightness ──
   final Brightness brightness;
 
@@ -64,6 +67,7 @@ class HarmonyColors extends ThemeExtension<HarmonyColors> {
     required this.successGradient,
     required this.dangerGradient,
     required this.fingerColors,
+    required this.backgroundImage,
     required this.brightness,
   });
 
@@ -72,58 +76,59 @@ class HarmonyColors extends ThemeExtension<HarmonyColors> {
     return Theme.of(context).extension<HarmonyColors>()!;
   }
 
-  // ── Blue / White theme (Shazam classic) ──
+  // ── Blue dominant light theme ──
   static const shazamBlue = HarmonyColors(
     brightness: Brightness.light,
-    scaffold: Color(0xFFF0F4F8),
-    surface: Colors.white,
-    card: Colors.white,
-    primary: Color(0xFF0088FE),
-    primaryLight: Color(0xFF33A1FF),
-    accent: Color(0xFF0055D4),
-    accentAlt: Color(0xFF00C2FF),
-    success: Color(0xFF00C853),
-    error: Color(0xFFE53935),
-    warning: Color(0xFFFFA726),
-    textPrimary: Color(0xFF111827),
-    textSecondary: Color(0xFF6B7280),
-    textHint: Color(0xFF9CA3AF),
-    glassBorder: Color(0xFFE2E8F0),
+    scaffold: Color(0xFFF0F4FF),
+    surface: Color(0xFFFFFFFF),
+    card: Color(0xFFFFFFFF),
+    primary: Color(0xFF007DFF),
+    primaryLight: Color(0xFF3B82F6),
+    accent: Color(0xFF2563EB),
+    accentAlt: Color(0xFF60A5FA),
+    success: Color(0xFF059669),
+    error: Color(0xFFDC2626),
+    warning: Color(0xFFF59E0B),
+    textPrimary: Color(0xFF0F172A),
+    textSecondary: Color(0xFF475569),
+    textHint: Color(0xFF94A3B8),
+    glassBorder: Color(0xFFBFDBFE),
     primaryGradient: LinearGradient(
-      colors: [Color(0xFF0088FE), Color(0xFF00C2FF)],
+      colors: [Color(0xFF007DFF), Color(0xFF007DFF)],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
     ),
     backgroundGradient: LinearGradient(
-      colors: [Color(0xFFF0F4F8), Color(0xFFE8EDF5)],
+      colors: [Color(0xFFF0F4FF), Color(0xFFDBEAFE)],
       begin: Alignment.topCenter,
       end: Alignment.bottomCenter,
     ),
     cardGradient: LinearGradient(
-      colors: [Colors.white, Color(0xFFF8FAFC)],
+      colors: [Colors.white, Color(0xFFF0F4FF)],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
     ),
     successGradient: LinearGradient(
-      colors: [Color(0xFF00C853), Color(0xFF00E676)],
+      colors: [Color(0xFF059669), Color(0xFF10B981)],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
     ),
     dangerGradient: LinearGradient(
-      colors: [Color(0xFFE53935), Color(0xFFFF5252)],
+      colors: [Color(0xFFDC2626), Color(0xFFEF4444)],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
     ),
     fingerColors: [
-      Color(0xFFE53935),
-      Color(0xFFFFA726),
-      Color(0xFF00C853),
-      Color(0xFF0088FE),
-      Color(0xFF7C4DFF),
+      Color(0xFFDC2626),
+      Color(0xFFF59E0B),
+      Color(0xFF059669),
+      Color(0xFF2563EB),
+      Color(0xFF7C3AED),
     ],
+    backgroundImage: 'assets/images/bg_light.png',
   );
 
-  // ── Orange / Black theme (Shazam concert mode) ──
+  // ── Orange / Black theme (dark mode) ──
   static const shazamOrange = HarmonyColors(
     brightness: Brightness.dark,
     scaffold: Color(0xFF0A0A0A),
@@ -172,6 +177,7 @@ class HarmonyColors extends ThemeExtension<HarmonyColors> {
       Color(0xFFFF6B00),
       Color(0xFFE040FB),
     ],
+    backgroundImage: 'assets/images/bg_dark.png',
   );
 
   static const List<String> fingerNames = [

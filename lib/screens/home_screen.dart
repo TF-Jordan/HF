@@ -8,7 +8,7 @@ import 'settings/settings_screen.dart';
 import 'translation/translation_screen.dart';
 
 /// Root screen with bottom navigation.
-/// Order: Traduction (main), Monitor, Parametres.
+/// Order: Collecte (left) | Traduction (center, prominent) | Reglages (right).
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -17,11 +17,11 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int _currentIndex = 0;
+  int _currentIndex = 1; // Default to Translation (center)
 
   static final _screens = [
-    const TranslationScreen(),
     const MonitorScreen(),
+    const TranslationScreen(),
     const SettingsScreen(),
   ];
 
@@ -30,8 +30,9 @@ class _HomeScreenState extends State<HomeScreen> {
     final c = HarmonyColors.of(context);
     final conn = context.watch<ConnectionProvider>();
 
-    return Container(
-      decoration: BoxDecoration(gradient: c.backgroundGradient),
+    return _BackgroundContainer(
+      gradient: c.backgroundGradient,
+      imagePath: c.backgroundImage,
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
@@ -111,94 +112,177 @@ class _HomeScreenState extends State<HomeScreen> {
           index: _currentIndex,
           children: _screens,
         ),
-        bottomNavigationBar: Container(
-          decoration: BoxDecoration(
-            color: c.card,
-            border: Border(top: BorderSide(color: c.glassBorder)),
+        bottomNavigationBar: _buildBottomNav(c),
+      ),
+    );
+  }
+
+  Widget _buildBottomNav(HarmonyColors c) {
+    return Container(
+      decoration: BoxDecoration(
+        color: c.card,
+        border: Border(top: BorderSide(color: c.glassBorder, width: 0.5)),
+        boxShadow: [
+          BoxShadow(
+            color: c.primary.withAlpha(8),
+            blurRadius: 20,
+            offset: const Offset(0, -4),
           ),
-          child: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _NavItem(
-                    icon: Icons.translate_rounded,
-                    label: 'Traduction',
-                    active: _currentIndex == 0,
-                    onTap: () => setState(() => _currentIndex = 0),
-                  ),
-                  _NavItem(
-                    icon: Icons.monitor_heart_rounded,
-                    label: 'Collecte',
-                    active: _currentIndex == 1,
-                    onTap: () => setState(() => _currentIndex = 1),
-                  ),
-                  _NavItem(
-                    icon: Icons.tune_rounded,
-                    label: 'Reglages',
-                    active: _currentIndex == 2,
-                    onTap: () => setState(() => _currentIndex = 2),
-                  ),
-                ],
+        ],
+      ),
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.only(top: 4, bottom: 6, left: 24, right: 24),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              // ── Left: Collecte ──
+              _buildSideTab(
+                c,
+                icon: Icons.monitor_heart_rounded,
+                label: 'Collecte',
+                index: 0,
+              ),
+
+              // ── Center: Traduction (prominent) ──
+              _buildCenterTab(c),
+
+              // ── Right: Reglages ──
+              _buildSideTab(
+                c,
+                icon: Icons.tune_rounded,
+                label: 'Reglages',
+                index: 2,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSideTab(HarmonyColors c,
+      {required IconData icon, required String label, required int index}) {
+    final active = _currentIndex == index;
+    return GestureDetector(
+      onTap: () => setState(() => _currentIndex = index),
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              color: active ? c.primary : c.textHint,
+              size: 24,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                color: active ? c.primary : c.textHint,
+                fontSize: 11,
+                fontWeight: active ? FontWeight.w700 : FontWeight.w500,
               ),
             ),
-          ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCenterTab(HarmonyColors c) {
+    final active = _currentIndex == 1;
+    return GestureDetector(
+      onTap: () => setState(() => _currentIndex = 1),
+      child: Transform.translate(
+        offset: const Offset(0, -12),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 58,
+              height: 58,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: active ? c.primaryGradient : null,
+                color: active ? null : c.surface,
+                border: active
+                    ? null
+                    : Border.all(color: c.glassBorder, width: 1.5),
+                boxShadow: active
+                    ? [
+                        BoxShadow(
+                          color: c.primary.withAlpha(80),
+                          blurRadius: 16,
+                          offset: const Offset(0, 4),
+                        ),
+                      ]
+                    : [
+                        BoxShadow(
+                          color: c.textHint.withAlpha(20),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+              ),
+              child: Icon(
+                Icons.translate_rounded,
+                color: active ? Colors.white : c.textHint,
+                size: 28,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Traduction',
+              style: TextStyle(
+                color: active ? c.primary : c.textHint,
+                fontSize: 11,
+                fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 }
 
-class _NavItem extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final bool active;
-  final VoidCallback onTap;
+/// Container that tries to show a background image; falls back to gradient.
+class _BackgroundContainer extends StatelessWidget {
+  final LinearGradient gradient;
+  final String imagePath;
+  final Widget child;
 
-  const _NavItem({
-    required this.icon,
-    required this.label,
-    required this.active,
-    required this.onTap,
+  const _BackgroundContainer({
+    required this.gradient,
+    required this.imagePath,
+    required this.child,
   });
 
   @override
   Widget build(BuildContext context) {
-    final c = HarmonyColors.of(context);
-
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          gradient: active ? c.primaryGradient : null,
-          borderRadius: BorderRadius.circular(14),
+    return Stack(
+      children: [
+        // Gradient layer (always present as fallback)
+        Positioned.fill(
+          child: DecoratedBox(
+            decoration: BoxDecoration(gradient: gradient),
+          ),
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              color: active ? Colors.white : c.textHint,
-              size: 22,
-            ),
-            if (active) ...[
-              const SizedBox(width: 8),
-              Text(
-                label,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ],
-          ],
+        // Image layer (on top of gradient, fades in if present)
+        Positioned.fill(
+          child: Image.asset(
+            imagePath,
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+          ),
         ),
-      ),
+        // Content
+        Positioned.fill(child: child),
+      ],
     );
   }
 }
