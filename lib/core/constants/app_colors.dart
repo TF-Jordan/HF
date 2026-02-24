@@ -180,6 +180,114 @@ class HarmonyColors extends ThemeExtension<HarmonyColors> {
     backgroundImage: 'assets/images/bg_dark.png',
   );
 
+  // ── Doodle theme — blue wallpaper with white doodles ──
+  // Designed for bg_doodle.png: medium-blue background with white icon pattern.
+  // Cards are semi-transparent dark blue glass; gold accents pop on blue.
+  static const doodle = HarmonyColors(
+    brightness: Brightness.dark,
+    scaffold: Color(0xFF3D6898),
+    surface: Color(0xCC2B4F7A),
+    card: Color(0xCC1F3D64),
+    primary: Color(0xFF1565C0),
+    primaryLight: Color(0xFF42A5F5),
+    accent: Color(0xFFFFD54F),
+    accentAlt: Color(0xFFFFE082),
+    success: Color(0xFF66BB6A),
+    error: Color(0xFFEF5350),
+    warning: Color(0xFFFFCA28),
+    textPrimary: Color(0xFFF5F5F5),
+    textSecondary: Color(0xFFB8D4EC),
+    textHint: Color(0xFF7AAAD0),
+    glassBorder: Color(0xFF5889B5),
+    primaryGradient: LinearGradient(
+      colors: [Color(0xFF1565C0), Color(0xFF1E88E5)],
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+    ),
+    backgroundGradient: LinearGradient(
+      colors: [Color(0xFF4A7FB5), Color(0xFF2E5E8E)],
+      begin: Alignment.topCenter,
+      end: Alignment.bottomCenter,
+    ),
+    cardGradient: LinearGradient(
+      colors: [Color(0xCC2B4F7A), Color(0xCC1F3D64)],
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+    ),
+    successGradient: LinearGradient(
+      colors: [Color(0xFF66BB6A), Color(0xFF81C784)],
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+    ),
+    dangerGradient: LinearGradient(
+      colors: [Color(0xFFEF5350), Color(0xFFE57373)],
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+    ),
+    fingerColors: [
+      Color(0xFFEF5350),
+      Color(0xFFFFCA28),
+      Color(0xFF66BB6A),
+      Color(0xFF42A5F5),
+      Color(0xFFAB47BC),
+    ],
+    backgroundImage: 'assets/images/bg_doodle.png',
+  );
+
+  // ── Chalk theme — black chalkboard with white chalk doodles ──
+  // Designed for bg_chalk.png: dark chalkboard background with chalk drawings.
+  // Cards are semi-transparent dark glass; green chalkboard accent.
+  static const chalk = HarmonyColors(
+    brightness: Brightness.dark,
+    scaffold: Color(0xFF141414),
+    surface: Color(0xCC1E1E1E),
+    card: Color(0xCC1A1A1A),
+    primary: Color(0xFF43A047),
+    primaryLight: Color(0xFF66BB6A),
+    accent: Color(0xFFFFEE58),
+    accentAlt: Color(0xFFFFF176),
+    success: Color(0xFF69F0AE),
+    error: Color(0xFFFF5252),
+    warning: Color(0xFFFFD740),
+    textPrimary: Color(0xFFE8E8E8),
+    textSecondary: Color(0xFFAAAAAA),
+    textHint: Color(0xFF6E6E6E),
+    glassBorder: Color(0xFF363636),
+    primaryGradient: LinearGradient(
+      colors: [Color(0xFF43A047), Color(0xFF66BB6A)],
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+    ),
+    backgroundGradient: LinearGradient(
+      colors: [Color(0xFF141414), Color(0xFF1A1A1A)],
+      begin: Alignment.topCenter,
+      end: Alignment.bottomCenter,
+    ),
+    cardGradient: LinearGradient(
+      colors: [Color(0xCC1E1E1E), Color(0xCC1A1A1A)],
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+    ),
+    successGradient: LinearGradient(
+      colors: [Color(0xFF69F0AE), Color(0xFFA5D6A7)],
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+    ),
+    dangerGradient: LinearGradient(
+      colors: [Color(0xFFFF5252), Color(0xFFFF8A80)],
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+    ),
+    fingerColors: [
+      Color(0xFFFF5252),
+      Color(0xFFFFEE58),
+      Color(0xFF69F0AE),
+      Color(0xFF42A5F5),
+      Color(0xFFCE93D8),
+    ],
+    backgroundImage: 'assets/images/bg_chalk.png',
+  );
+
   static const List<String> fingerNames = [
     'Pouce',
     'Index',
@@ -202,4 +310,6 @@ class HarmonyColors extends ThemeExtension<HarmonyColors> {
 enum HarmonyThemeMode {
   shazamBlue,
   shazamOrange,
+  doodle,
+  chalk,
 }

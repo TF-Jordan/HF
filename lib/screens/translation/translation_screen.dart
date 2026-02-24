@@ -371,12 +371,12 @@ class _TranslationScreenState extends State<TranslationScreen> {
 
   Widget _buildReadingModeToggle(HarmonyColors c) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.only(bottom: 6),
       child: Container(
-        padding: const EdgeInsets.all(3),
+        padding: const EdgeInsets.all(2),
         decoration: BoxDecoration(
           color: c.surface,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(10),
           border: Border.all(color: c.glassBorder),
         ),
         child: Row(
@@ -386,12 +386,12 @@ class _TranslationScreenState extends State<TranslationScreen> {
                 onTap: () => setState(() => _readingMode = ReadingMode.word),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
-                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  padding: const EdgeInsets.symmetric(vertical: 7),
                   decoration: BoxDecoration(
-                    gradient: _readingMode == ReadingMode.word
-                        ? c.primaryGradient
+                    color: _readingMode == ReadingMode.word
+                        ? c.primary.withAlpha(25)
                         : null,
-                    borderRadius: BorderRadius.circular(9),
+                    borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -399,18 +399,18 @@ class _TranslationScreenState extends State<TranslationScreen> {
                       Icon(
                         Icons.text_fields_rounded,
                         color: _readingMode == ReadingMode.word
-                            ? Colors.white
+                            ? c.primary
                             : c.textHint,
-                        size: 18,
+                        size: 14,
                       ),
-                      const SizedBox(width: 6),
+                      const SizedBox(width: 4),
                       Text(
                         'Mot',
                         style: TextStyle(
                           color: _readingMode == ReadingMode.word
-                              ? Colors.white
+                              ? c.primary
                               : c.textSecondary,
-                          fontSize: 13,
+                          fontSize: 12,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -424,12 +424,12 @@ class _TranslationScreenState extends State<TranslationScreen> {
                 onTap: () => setState(() => _readingMode = ReadingMode.phrase),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
-                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  padding: const EdgeInsets.symmetric(vertical: 7),
                   decoration: BoxDecoration(
-                    gradient: _readingMode == ReadingMode.phrase
-                        ? c.primaryGradient
+                    color: _readingMode == ReadingMode.phrase
+                        ? c.primary.withAlpha(25)
                         : null,
-                    borderRadius: BorderRadius.circular(9),
+                    borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -437,18 +437,18 @@ class _TranslationScreenState extends State<TranslationScreen> {
                       Icon(
                         Icons.short_text_rounded,
                         color: _readingMode == ReadingMode.phrase
-                            ? Colors.white
+                            ? c.primary
                             : c.textHint,
-                        size: 18,
+                        size: 14,
                       ),
-                      const SizedBox(width: 6),
+                      const SizedBox(width: 4),
                       Text(
                         'Phrase',
                         style: TextStyle(
                           color: _readingMode == ReadingMode.phrase
-                              ? Colors.white
+                              ? c.primary
                               : c.textSecondary,
-                          fontSize: 13,
+                          fontSize: 12,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -582,109 +582,100 @@ class _TranslationScreenState extends State<TranslationScreen> {
 
   Widget _buildModeToggle(HarmonyColors c, TranslationProvider t) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        children: [
-          Expanded(
-            child: GestureDetector(
-              onTap: () {
-                if (t.activeMode == TranslationMode.manual) return;
-                t.setManualMode();
-              },
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                decoration: BoxDecoration(
-                  gradient: t.activeMode == TranslationMode.manual
-                      ? c.primaryGradient
-                      : null,
-                  color: t.activeMode == TranslationMode.manual
-                      ? null
-                      : c.surface,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Container(
+        padding: const EdgeInsets.all(2),
+        decoration: BoxDecoration(
+          color: c.surface,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: c.glassBorder),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: GestureDetector(
+                onTap: () {
+                  if (t.activeMode == TranslationMode.manual) return;
+                  t.setManualMode();
+                },
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  decoration: BoxDecoration(
                     color: t.activeMode == TranslationMode.manual
-                        ? Colors.transparent
-                        : c.glassBorder,
+                        ? c.primary.withAlpha(25)
+                        : null,
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.front_hand_rounded,
-                      color: t.activeMode == TranslationMode.manual
-                          ? Colors.white
-                          : c.textHint,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Manuel',
-                      style: TextStyle(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.front_hand_rounded,
                         color: t.activeMode == TranslationMode.manual
-                            ? Colors.white
-                            : c.textSecondary,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
+                            ? c.primary
+                            : c.textHint,
+                        size: 16,
                       ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: GestureDetector(
-              onTap: () {
-                if (t.activeMode == TranslationMode.auto) return;
-                t.setAutoMode();
-              },
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                decoration: BoxDecoration(
-                  gradient: t.activeMode == TranslationMode.auto
-                      ? c.successGradient
-                      : null,
-                  color: t.activeMode == TranslationMode.auto
-                      ? null
-                      : c.surface,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: t.activeMode == TranslationMode.auto
-                        ? Colors.transparent
-                        : c.glassBorder,
+                      const SizedBox(width: 5),
+                      Text(
+                        'Manuel',
+                        style: TextStyle(
+                          color: t.activeMode == TranslationMode.manual
+                              ? c.primary
+                              : c.textSecondary,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.auto_awesome_rounded,
-                      color: t.activeMode == TranslationMode.auto
-                          ? Colors.white
-                          : c.textHint,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Temps reel',
-                      style: TextStyle(
+              ),
+            ),
+            Expanded(
+              child: GestureDetector(
+                onTap: () {
+                  if (t.activeMode == TranslationMode.auto) return;
+                  t.setAutoMode();
+                },
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  decoration: BoxDecoration(
+                    color: t.activeMode == TranslationMode.auto
+                        ? c.success.withAlpha(25)
+                        : null,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.auto_awesome_rounded,
                         color: t.activeMode == TranslationMode.auto
-                            ? Colors.white
-                            : c.textSecondary,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
+                            ? c.success
+                            : c.textHint,
+                        size: 16,
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 5),
+                      Text(
+                        'Temps reel',
+                        style: TextStyle(
+                          color: t.activeMode == TranslationMode.auto
+                              ? c.success
+                              : c.textSecondary,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

@@ -7,6 +7,7 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 typedef OnJsonData = void Function(String data);
 typedef OnBinaryData = void Function(Uint8List data);
 typedef OnConnectionChanged = void Function(bool connected);
+typedef OnError = void Function(String error);
 
 /// Manages the WebSocket connection to the ESP32 master device.
 ///
@@ -14,14 +15,15 @@ typedef OnConnectionChanged = void Function(bool connected);
 /// not just when the socket opens. A timeout fires if no data arrives
 /// within [_connectTimeoutMs] after opening.
 class WebSocketService {
-  static const int _connectTimeoutMs = 3000;
-  static const int _dataTimeoutMs = 2000;
+  static const int _connectTimeoutMs = 5000;
+  static const int _dataTimeoutMs = 3000;
 
   WebSocketChannel? _channel;
   bool _connected = false;
   Timer? _connectTimer;
   Timer? _dataTimer;
   OnConnectionChanged? _onConnectionChanged;
+  OnError? _onError;
 
   bool get isConnected => _connected;
 
@@ -32,14 +34,15 @@ class WebSocketService {
     required OnJsonData onJson,
     required OnBinaryData onBinary,
     required OnConnectionChanged onConnectionChanged,
+    OnError? onError,
   }) {
     disconnect();
     _onConnectionChanged = onConnectionChanged;
+    _onError = onError;
 
     try {
-      _channel = WebSocketChannel.connect(
-        Uri.parse('ws://$ip:$port'),
-      );
+      final uri = Uri.parse('ws://$ip:$port');
+      _channel = WebSocketChannel.connect(uri);
 
       // Do NOT set _connected = true here.
       // Wait for actual data before confirming connection.
@@ -75,15 +78,18 @@ class WebSocketService {
             onBinary(data);
           }
         },
-        onError: (_) {
+        onError: (error) {
+          _onError?.call(error.toString());
           _setDisconnected();
         },
         onDone: () {
           _setDisconnected();
         },
       );
-    } catch (_) {
+    } catch (e) {
       _connected = false;
+      final msg = e.toString();
+      onError?.call(msg);
       onConnectionChanged(false);
     }
   }

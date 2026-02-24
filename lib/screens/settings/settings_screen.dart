@@ -88,9 +88,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
             icon: Icons.router_rounded,
             trailing: StatusIndicator(
               active: conn.isConnected,
-              label: conn.isConnected ? 'Connecte' : 'Deconnecte',
+              label: conn.isConnected
+                  ? 'Connecte'
+                  : conn.isConnecting
+                      ? 'Connexion...'
+                      : 'Deconnecte',
               activeColor: c.success,
-              inactiveColor: c.error,
+              inactiveColor: conn.isConnecting ? c.warning : c.error,
             ),
           ),
           const SizedBox(height: 16),
@@ -128,12 +132,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         gradient: c.dangerGradient,
                         onPressed: conn.disconnect,
                       )
-                    : GradientButton(
-                        label: 'Connecter',
-                        icon: Icons.link,
-                        gradient: c.primaryGradient,
-                        onPressed: conn.connect,
-                      ),
+                    : conn.isConnecting
+                        ? GradientButton(
+                            label: 'Connexion...',
+                            icon: Icons.sync_rounded,
+                            gradient: LinearGradient(
+                              colors: [c.warning, c.warning.withAlpha(180)],
+                            ),
+                            onPressed: conn.disconnect,
+                          )
+                        : GradientButton(
+                            label: 'Connecter',
+                            icon: Icons.link,
+                            gradient: c.primaryGradient,
+                            onPressed: conn.connect,
+                          ),
               ),
             ],
           ),
@@ -160,15 +173,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
               Expanded(
                 child: _ThemeCard(
                   label: 'Blue',
-                  primary: const Color(0xFF0088FE),
-                  background: const Color(0xFFF0F4F8),
-                  textColor: const Color(0xFF111827),
+                  primary: const Color(0xFF1D4ED8),
+                  background: const Color(0xFFF0F4FF),
+                  textColor: const Color(0xFF0F172A),
                   selected: themeProv.mode == HarmonyThemeMode.shazamBlue,
                   onTap: () =>
                       themeProv.setTheme(HarmonyThemeMode.shazamBlue),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 8),
               Expanded(
                 child: _ThemeCard(
                   label: 'Orange',
@@ -178,6 +191,34 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   selected: themeProv.mode == HarmonyThemeMode.shazamOrange,
                   onTap: () =>
                       themeProv.setTheme(HarmonyThemeMode.shazamOrange),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: _ThemeCard(
+                  label: 'Doodle',
+                  primary: const Color(0xFF1565C0),
+                  background: const Color(0xFF3D6898),
+                  textColor: const Color(0xFFF5F5F5),
+                  selected: themeProv.mode == HarmonyThemeMode.doodle,
+                  onTap: () =>
+                      themeProv.setTheme(HarmonyThemeMode.doodle),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _ThemeCard(
+                  label: 'Chalk',
+                  primary: const Color(0xFF43A047),
+                  background: const Color(0xFF141414),
+                  textColor: const Color(0xFFE8E8E8),
+                  selected: themeProv.mode == HarmonyThemeMode.chalk,
+                  onTap: () =>
+                      themeProv.setTheme(HarmonyThemeMode.chalk),
                 ),
               ),
             ],

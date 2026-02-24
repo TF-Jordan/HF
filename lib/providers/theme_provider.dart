@@ -18,9 +18,8 @@ class ThemeProvider extends ChangeNotifier {
   }
 
   void toggle() {
-    _mode = _mode == HarmonyThemeMode.shazamBlue
-        ? HarmonyThemeMode.shazamOrange
-        : HarmonyThemeMode.shazamBlue;
+    final values = HarmonyThemeMode.values;
+    _mode = values[(_mode.index + 1) % values.length];
     notifyListeners();
   }
 }

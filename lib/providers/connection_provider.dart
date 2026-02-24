@@ -8,6 +8,13 @@ import '../models/device_state.dart';
 import '../services/binary_parser.dart';
 import '../services/websocket_service.dart';
 
+/// Connection lifecycle status.
+enum ConnectionStatus {
+  disconnected,
+  connecting,
+  connected,
+}
+
 /// Manages the WebSocket connection and raw sensor state.
 ///
 /// Listeners (other providers) can register callbacks via [onFrame]
@@ -21,7 +28,8 @@ class ConnectionProvider extends ChangeNotifier {
 
   String _ip = AppConstants.defaultEspIp;
   int _port = AppConstants.defaultEspPort;
-  bool _connected = false;
+  ConnectionStatus _status = ConnectionStatus.disconnected;
+  String? _statusMessage;
 
   // Display copies — updated on every frame.
   List<int> flex1 = List<int>.filled(5, 0);
@@ -36,9 +44,16 @@ class ConnectionProvider extends ChangeNotifier {
   /// External frame listeners (recording, translation, etc.)
   final List<void Function(int timestampMs)> _frameListeners = [];
 
+  /// External status listeners — called once per status change for UI feedback.
+  final List<void Function(ConnectionStatus status, String? message)>
+      _statusListeners = [];
+
   String get ip => _ip;
   int get port => _port;
-  bool get isConnected => _connected;
+  bool get isConnected => _status == ConnectionStatus.connected;
+  bool get isConnecting => _status == ConnectionStatus.connecting;
+  ConnectionStatus get status => _status;
+  String? get statusMessage => _statusMessage;
 
   set ip(String value) {
     _ip = value;
@@ -58,23 +73,54 @@ class ConnectionProvider extends ChangeNotifier {
     _frameListeners.remove(listener);
   }
 
+  void addStatusListener(
+      void Function(ConnectionStatus status, String? message) listener) {
+    _statusListeners.add(listener);
+  }
+
+  void removeStatusListener(
+      void Function(ConnectionStatus status, String? message) listener) {
+    _statusListeners.remove(listener);
+  }
+
+  void _setStatus(ConnectionStatus status, [String? message]) {
+    _status = status;
+    _statusMessage = message;
+    notifyListeners();
+    for (final listener in _statusListeners) {
+      listener(status, message);
+    }
+  }
+
   void connect() {
+    _setStatus(ConnectionStatus.connecting, 'Connexion a $_ip:$_port...');
+
     _ws.connect(
       ip: _ip,
       port: _port,
       onJson: _handleJson,
       onBinary: _handleBinary,
       onConnectionChanged: (connected) {
-        _connected = connected;
-        notifyListeners();
+        if (connected) {
+          _setStatus(ConnectionStatus.connected, 'Connecte a $_ip:$_port');
+        } else {
+          // Only show timeout message if we were connecting (not if data stops)
+          final msg = _status == ConnectionStatus.connecting
+              ? 'Echec: aucune reponse de $_ip:$_port (timeout)'
+              : 'Connexion perdue avec $_ip:$_port';
+          _setStatus(ConnectionStatus.disconnected, msg);
+        }
+      },
+      onError: (error) {
+        _setStatus(ConnectionStatus.disconnected,
+            'Erreur de connexion: $error');
       },
     );
   }
 
   void disconnect() {
     _ws.disconnect();
-    _connected = false;
-    notifyListeners();
+    _setStatus(ConnectionStatus.disconnected, 'Deconnecte');
   }
 
   // ── Private handlers ──

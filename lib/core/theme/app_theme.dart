@@ -5,9 +5,17 @@ import '../constants/app_colors.dart';
 
 abstract final class AppTheme {
   static ThemeData fromMode(HarmonyThemeMode mode) {
-    final colors = mode == HarmonyThemeMode.shazamBlue
-        ? HarmonyColors.shazamBlue
-        : HarmonyColors.shazamOrange;
+    final HarmonyColors colors;
+    switch (mode) {
+      case HarmonyThemeMode.shazamBlue:
+        colors = HarmonyColors.shazamBlue;
+      case HarmonyThemeMode.shazamOrange:
+        colors = HarmonyColors.shazamOrange;
+      case HarmonyThemeMode.doodle:
+        colors = HarmonyColors.doodle;
+      case HarmonyThemeMode.chalk:
+        colors = HarmonyColors.chalk;
+    }
     return _build(colors);
   }
 
