@@ -55,7 +55,7 @@ abstract final class AppTheme {
         ),
         iconTheme: IconThemeData(color: c.textPrimary),
       ),
-      cardTheme: CardThemeData(
+      cardTheme: CardTheme(
         color: c.card,
         elevation: isDark ? 0 : 2,
         shadowColor: isDark ? Colors.transparent : Colors.black12,
