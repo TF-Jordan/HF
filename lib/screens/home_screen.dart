@@ -97,6 +97,8 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
+          backgroundColor: c.card.withAlpha(255),
+          elevation: 0,
           title: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -192,7 +194,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildBottomNav(HarmonyColors c) {
     return Container(
       decoration: BoxDecoration(
-        color: c.card,
+        color: c.card.withAlpha(255),
         border: Border(top: BorderSide(color: c.glassBorder, width: 0.5)),
         boxShadow: [
           BoxShadow(
