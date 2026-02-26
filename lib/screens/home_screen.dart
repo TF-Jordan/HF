@@ -123,20 +123,20 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Container(
                 margin: const EdgeInsets.only(right: 16),
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
                   color: conn.isConnected
                       ? c.success.withAlpha(25)
                       : conn.isConnecting
-                          ? c.warning.withAlpha(25)
-                          : c.error.withAlpha(25),
+                      ? c.warning.withAlpha(25)
+                      : c.error.withAlpha(25),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
                     color: conn.isConnected
                         ? c.success.withAlpha(80)
                         : conn.isConnecting
-                            ? c.warning.withAlpha(80)
-                            : c.error.withAlpha(80),
+                        ? c.warning.withAlpha(80)
+                        : c.error.withAlpha(80),
                   ),
                 ),
                 child: Row(
@@ -164,14 +164,14 @@ class _HomeScreenState extends State<HomeScreen> {
                       conn.isConnected
                           ? 'Connecte'
                           : conn.isConnecting
-                              ? 'Connexion...'
-                              : 'Hors ligne',
+                          ? 'Connexion...'
+                          : 'Hors ligne',
                       style: TextStyle(
                         color: conn.isConnected
                             ? c.success
                             : conn.isConnecting
-                                ? c.warning
-                                : c.error,
+                            ? c.warning
+                            : c.error,
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                       ),
@@ -288,19 +288,19 @@ class _HomeScreenState extends State<HomeScreen> {
                     : Border.all(color: c.glassBorder, width: 1.5),
                 boxShadow: active
                     ? [
-                        BoxShadow(
-                          color: c.primary.withAlpha(80),
-                          blurRadius: 16,
-                          offset: const Offset(0, 4),
-                        ),
-                      ]
+                  BoxShadow(
+                    color: c.primary.withAlpha(80),
+                    blurRadius: 16,
+                    offset: const Offset(0, 4),
+                  ),
+                ]
                     : [
-                        BoxShadow(
-                          color: c.textHint.withAlpha(20),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
+                  BoxShadow(
+                    color: c.textHint.withAlpha(20),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
               child: Icon(
                 Icons.translate,

@@ -1,0 +1,401 @@
+% ════════════════════════════════════════════════════════════════
+%     CHAPITRE 4 --- SIGNATURE DE L'APK
+% ════════════════════════════════════════════════════════════════
+
+\chapter{Signature de l'APK pour la production}
+\label{chap:signature}
+
+\section{G\'en\'eration du keystore}
+
+Un \concept{keystore} est un fichier contenant la cl\'e cryptographique utilis\'ee pour signer l'APK. Il garantit l'authenticit\'e de l'application.
+
+\begin{codebox}
+\begin{lstlisting}[language=bash]
+keytool -genkey -v \
+  -keystore harmony-release.jks \
+  -keyalg RSA -keysize 2048 \
+  -validity 10000 \
+  -alias harmony-key
+\end{lstlisting}
+\end{codebox}
+
+\begin{alertbox}
+\textbf{\faExclamationTriangle\ Important :} Conservez le fichier \tech{harmony-release.jks} et les mots de passe en lieu s\^ur. La perte du keystore emp\^eche toute mise \`a jour de l'application sur le Play Store ou la redistribution sign\'ee.
+\end{alertbox}
+
+\section{Configuration locale : \tech{key.properties}}
+
+Cr\'eez le fichier \tech{android/key.properties} (ne pas le commiter dans Git) :
+
+\begin{codebox}
+\begin{lstlisting}
+storePassword=votre_mot_de_passe_store
+keyPassword=votre_mot_de_passe_cle
+keyAlias=harmony-key
+storeFile=../harmony-release.jks
+\end{lstlisting}
+\end{codebox}
+
+\begin{successbox}
+\statusok\ Ajoutez \tech{android/key.properties} et \tech{*.jks} dans votre fichier \tech{.gitignore} pour \'eviter toute fuite de secrets.
+\end{successbox}
+
+\section{Encodage du keystore en base64}
+
+Pour stocker le keystore dans les secrets GitHub :
+
+\begin{codebox}
+\begin{lstlisting}[language=bash]
+base64 -w 0 harmony-release.jks > keystore_b64.txt
+\end{lstlisting}
+\end{codebox}
+
+Copiez le contenu de \tech{keystore\_b64.txt} dans le secret GitHub \tech{KEYSTORE\_BASE64}.
+
+\section{Workflow avec signature}
+
+Voici le workflow enrichi pour signer automatiquement l'APK :
+
+\begin{codebox}
+\begin{lstlisting}
+name: Flutter Build & Sign
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.24.0"
+          channel: stable
+          cache: true
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android NDK
+        run: sdkmanager "ndk;27.0.12077973"
+
+      - name: Decode Keystore
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" \
+            | base64 -d > android/keystore.jks
+
+      - name: Create key.properties
+        run: |
+          cat > android/key.properties << EOF
+          storePassword=${{
+              secrets.STORE_PASSWORD }}
+          keyPassword=${{
+              secrets.KEY_PASSWORD }}
+          keyAlias=${{
+              secrets.KEY_ALIAS }}
+          storeFile=keystore.jks
+          EOF
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build signed APK
+        run: flutter build apk --release
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: harmony-signed-apk
+          path: build/app/outputs/
+                flutter-apk/app-release.apk
+\end{lstlisting}
+\end{codebox}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+    step/.style={rectangle, rounded corners=6pt, draw=#1, fill=#1!10, minimum width=2.2cm, minimum height=1.2cm, font=\sffamily\scriptsize\bfseries, text=harmonyGray900, align=center, line width=0.8pt},
+    arr/.style={-{Stealth[length=2.5mm]}, line width=1.2pt, harmonyAccent}
+]
+    \node[step=harmonyPrimary] (s1) {\faLock\\Secrets};
+    \node[step=harmonyWarm, right=0.6cm of s1] (s2) {\faKey\\D\'ecoder\\Keystore};
+    \node[step=harmonyDark, right=0.6cm of s2] (s3) {\faFileAlt\\Cr\'eer\\key.props};
+    \node[step=harmonyPrimary, right=0.6cm of s3] (s4) {\faHammer\\Build\\APK};
+    \node[step=harmonySuccess, right=0.6cm of s4] (s5) {\faShieldAlt\\APK\\sign\'e};
+
+    \draw[arr] (s1) -- (s2);
+    \draw[arr] (s2) -- (s3);
+    \draw[arr] (s3) -- (s4);
+    \draw[arr] (s4) -- (s5);
+\end{tikzpicture}
+\caption{Flux de signature automatique de l'APK dans GitHub Actions.}
+\label{fig:signature-flow}
+\end{figure}
+
+
+% ════════════════════════════════════════════════════════════════
+%     CHAPITRE 5 --- AM\'ELIORATIONS DU WORKFLOW
+% ════════════════════════════════════════════════════════════════
+
+\chapter{Am\'eliorations du workflow}
+
+\section{Analyse statique du code}
+
+Ajoutez une \'etape d'analyse pour d\'etecter les erreurs et les mauvaises pratiques :
+
+\begin{codebox}
+\begin{lstlisting}
+      - name: Analyze code
+        run: flutter analyze --no-fatal-infos
+\end{lstlisting}
+\end{codebox}
+
+\begin{infobox}
+\textbf{\faInfoCircle\ Conseil :} L'option \tech{-{}-no-fatal-infos} permet de ne pas bloquer le build pour de simples informations. Les warnings et erreurs restent bloquants.
+\end{infobox}
+
+\section{Tests unitaires}
+
+\begin{codebox}
+\begin{lstlisting}
+      - name: Run tests
+        run: flutter test
+\end{lstlisting}
+\end{codebox}
+
+\section{Versionnage automatique}
+
+Automatisez le num\'ero de build en utilisant le num\'ero de run GitHub :
+
+\begin{codebox}
+\begin{lstlisting}
+      - name: Build APK with auto version
+        run: |
+          flutter build apk --release \
+            --build-number=${{ github.run_number }}
+\end{lstlisting}
+\end{codebox}
+
+\section{Cr\'eation automatique de Releases GitHub}
+
+Pour publier automatiquement une release avec l'APK attach\'e lorsqu'un tag est pouss\'e :
+
+\begin{codebox}
+\begin{lstlisting}
+  release:
+    needs: build-android
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download APK
+        uses: actions/download-artifact@v4
+        with:
+          name: harmony-signed-apk
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: app-release.apk
+          generate_release_notes: true
+\end{lstlisting}
+\end{codebox}
+
+\begin{successbox}
+\statusok\ Pour d\'eclencher une release, il suffit de cr\'eer un tag :
+\tech{git tag v1.0.0 \&\& git push origin v1.0.0}
+\end{successbox}
+
+\section{Workflow complet am\'elior\'e}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+    step/.style={rectangle, rounded corners=6pt, draw=#1, fill=#1!10, minimum width=2.2cm, minimum height=1cm, font=\sffamily\scriptsize\bfseries, text=harmonyGray900, align=center, line width=0.8pt},
+    arr/.style={-{Stealth[length=2.5mm]}, line width=1pt, harmonyAccent},
+    grp/.style={rectangle, rounded corners=8pt, draw=#1, dashed, inner sep=8pt, line width=1pt}
+]
+    \node[step=harmonyPrimary] (checkout) {\faCodeBranch\\Checkout};
+    \node[step=harmonyDark, right=0.5cm of checkout] (setup) {\faCogs\\Setup\\Env};
+    \node[step=harmonyWarm, right=0.5cm of setup] (analyze) {\faSearch\\Analyze};
+    \node[step=harmonyAccent, right=0.5cm of analyze] (test) {\faVial\\Test};
+    \node[step=harmonyPrimary, right=0.5cm of test] (build) {\faHammer\\Build};
+    \node[step=harmonySuccess, right=0.5cm of build] (upload) {\faUpload\\Upload};
+
+    \node[step=harmonyError, below=1cm of upload] (release) {\faTag\\Release};
+
+    \draw[arr] (checkout) -- (setup);
+    \draw[arr] (setup) -- (analyze);
+    \draw[arr] (analyze) -- (test);
+    \draw[arr] (test) -- (build);
+    \draw[arr] (build) -- (upload);
+    \draw[arr, dashed, harmonyError] (upload) -- node[right, font=\sffamily\tiny, text=harmonyGray500] {si tag} (release);
+
+    \node[grp=harmonyGray300, fit=(checkout)(setup)(analyze)(test)(build)(upload), label={[font=\sffamily\scriptsize\bfseries, text=harmonyGray500]above:Job: build-android}] {};
+\end{tikzpicture}
+\caption{Pipeline CI/CD am\'elior\'e avec analyse, tests et releases automatiques.}
+\label{fig:pipeline-ameliore}
+\end{figure}
+
+
+% ════════════════════════════════════════════════════════════════
+%     CHAPITRE 6 --- DISTRIBUTION DE L'APK
+% ════════════════════════════════════════════════════════════════
+
+\chapter{Distribution de l'APK}
+
+\section{R\'ecup\'eration depuis GitHub Actions}
+
+\begin{enumerate}
+    \item Acc\'edez \`a l'onglet \concept{Actions} de votre d\'ep\^ot GitHub.
+    \item Cliquez sur le dernier \concept{workflow run} r\'eussi (indicateur vert \statusok).
+    \item Dans la section \concept{Artifacts}, t\'el\'echargez \tech{harmony-signed-apk}.
+    \item D\'ecompressez le fichier ZIP pour obtenir \tech{app-release.apk}.
+\end{enumerate}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+    box/.style={rectangle, rounded corners=8pt, draw=harmonyGray300, fill=harmonyWhite, minimum width=9cm, minimum height=1cm, font=\sffamily\small, text=harmonyGray900, line width=0.8pt}
+]
+    \node[box] (b1) at (0,0) {\faGithub\ \textbf{GitHub} \flowto\ Onglet \textbf{Actions}};
+    \node[box] (b2) at (0,-1.5) {\statusok\ \textbf{Flutter Build} --- Run \#42 --- \textcolor{harmonySuccess}{Success}};
+    \node[box, draw=harmonyPrimary, fill=harmonyLight] (b3) at (0,-3) {\faDownload\ \textbf{Artifacts :} harmony-signed-apk (15.2 MB)};
+
+    \draw[-{Stealth}, harmonyAccent, line width=1pt] (b1) -- (b2);
+    \draw[-{Stealth}, harmonyAccent, line width=1pt] (b2) -- (b3);
+\end{tikzpicture}
+\caption{T\'el\'echargement de l'APK depuis l'interface GitHub Actions.}
+\label{fig:download-artifact}
+\end{figure}
+
+\section{Distribution via GitHub Releases}
+
+Si le workflow de release automatique est configur\'e (chapitre 5), chaque tag cr\'ee une page de release publique :
+
+\begin{processbox}
+\begin{enumerate}
+    \item Cr\'eez un tag de version : \tech{git tag v1.2.0 \&\& git push origin v1.2.0}
+    \item GitHub Actions compile l'APK et cr\'ee automatiquement une \concept{Release}.
+    \item Partagez le lien de la release avec les utilisateurs :
+    \tech{https://github.com/user/Harmony\_front/releases/latest}
+\end{enumerate}
+\end{processbox}
+
+\section{Distribution manuelle}
+
+Pour distribuer l'APK sans passer par le Play Store :
+
+\begin{itemize}
+    \item \faShare\ \textbf{Partage direct} : Envoyez le fichier \tech{app-release.apk} par email, Bluetooth, WhatsApp ou cl\'e USB.
+    \item \faQrcode\ \textbf{QR Code} : H\'ebergez l'APK sur un serveur web et g\'en\'erez un QR code pointant vers l'URL de t\'el\'echargement.
+    \item \faCloud\ \textbf{Cloud} : Uploadez l'APK sur Google Drive, Dropbox ou un service \'equivalent et partagez le lien.
+\end{itemize}
+
+\section{Publication sur le Google Play Store (optionnel)}
+
+\begin{alertbox}
+\textbf{\faExclamationTriangle\ Pr\'erequis :} Un compte Google Play Developer (frais uniques de 25\$) et l'APK sign\'e avec un keystore de production.
+\end{alertbox}
+
+\begin{enumerate}
+    \item Cr\'eez une fiche d'application sur la \concept{Google Play Console}.
+    \item Configurez les informations de l'application (description, captures d'\'ecran, ic\^one).
+    \item Uploadez l'APK sign\'e dans la section \concept{Production}.
+    \item Soumettez pour examen par Google (d\'elai : 1 \`a 7 jours).
+\end{enumerate}
+
+
+% ════════════════════════════════════════════════════════════════
+%     CHAPITRE 7 --- D\'EPANNAGE CI/CD
+% ════════════════════════════════════════════════════════════════
+
+\chapter{D\'epannage CI/CD}
+
+\section{Erreurs fr\'equentes}
+
+\begin{table}[H]
+\centering
+\rowcolors{2}{harmonyGray100}{harmonyWhite}
+\begin{tabularx}{\textwidth}{>{\sffamily\small}p{3.2cm} >{\sffamily\small}X >{\sffamily\small}X}
+\toprule
+\textbf{\textcolor{harmonyPrimary}{Erreur}} & \textbf{\textcolor{harmonyPrimary}{Cause}} & \textbf{\textcolor{harmonyPrimary}{Solution}} \\
+\midrule
+NDK not found & Version du NDK non install\'ee ou incompatible & V\'erifiez la version dans le workflow : \tech{ndk;27.0.12077973} \\
+\addlinespace
+Gradle build failed & Version Java incompatible & Utilisez Java 17 (Temurin) comme dans le workflow \\
+\addlinespace
+Flutter version mismatch & SDK local diff\'erent du CI & Alignez la version dans \tech{flutter-version} du workflow \\
+\addlinespace
+Keystore not found & Secret mal configur\'e ou \'etape manquante & V\'erifiez les noms des secrets et l'\'etape \tech{Decode Keystore} \\
+\addlinespace
+Cache miss & Premi\`ere ex\'ecution ou cache expir\'e & Normal au premier run, les suivants seront plus rapides \\
+\addlinespace
+pub get failed & D\'ependance introuvable ou version incompatible & V\'erifiez \tech{pubspec.yaml} et les contraintes de version \\
+\bottomrule
+\end{tabularx}
+\caption{Erreurs CI/CD fr\'equentes et solutions.}
+\label{tab:depannage-cicd}
+\end{table}
+
+\section{Lecture des logs GitHub Actions}
+
+\begin{enumerate}
+    \item Acc\'edez \`a l'onglet \concept{Actions} du d\'ep\^ot.
+    \item Cliquez sur le run \'echou\'e (\statusno\ en rouge).
+    \item D\'epliez l'\'etape en \'echec pour voir les logs d\'etaill\'es.
+    \item Cherchez les lignes marqu\'ees \textbf{Error} ou \textbf{FAILURE} pour identifier le probl\`eme.
+\end{enumerate}
+
+\begin{infobox}
+\textbf{\faInfoCircle\ Astuce :} Utilisez la fonction \concept{Search logs} (loupe) en haut des logs pour rechercher rapidement un mot-cl\'e d'erreur sp\'ecifique.
+\end{infobox}
+
+\section{Optimisation des temps de build}
+
+\begin{processbox}
+\textbf{\textcolor{harmonyPrimary}{\faTachometerAlt\ Strat\'egies d'optimisation :}}
+
+\begin{tabularx}{\textwidth}{>{\bfseries\sffamily}l X >{\sffamily}c}
+\toprule
+Strat\'egie & Description & Gain estim\'e \\
+\midrule
+Cache Flutter & D\'ej\`a activ\'e via \tech{cache: true} dans le workflow & $\sim$2 min \\
+Cache Gradle & Ajouter \tech{actions/cache} pour \tech{\textasciitilde/.gradle} & $\sim$1 min \\
+Filtrer les branches & Ne builder que \tech{main} et \tech{develop} & \'Evite les builds inutiles \\
+Skip CI & Ajouter \tech{[skip ci]} dans le message de commit & Build non d\'eclench\'e \\
+\bottomrule
+\end{tabularx}
+\end{processbox}
+
+\begin{codebox}
+\begin{lstlisting}
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ hashFiles(
+            '**/*.gradle*') }}
+          restore-keys: gradle-
+\end{lstlisting}
+\end{codebox}
+
+\elegantsep
+
+\begin{successbox}
+\statusok\ \textbf{F\'elicitations !} Votre pipeline CI/CD est d\'esormais pleinement op\'erationnel. Chaque push sur \tech{main} produit automatiquement un APK sign\'e, test\'e et disponible en t\'el\'echargement via GitHub Actions ou GitHub Releases.
+\end{successbox}

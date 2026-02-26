@@ -1,0 +1,388 @@
+% ════════════════════════════════════════════════════════════════
+%        CHAPITRE 3 — INTERFACE DE L'APPLICATION
+% ════════════════════════════════════════════════════════════════
+
+\chapter{Interface de l'application}
+
+L'application Harmony est organisée autour de \concept{trois onglets principaux} accessibles via la barre de navigation inférieure.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+    tab/.style={rectangle, rounded corners=6pt, minimum width=3.2cm, minimum height=1.2cm, font=\sffamily\small\bfseries, line width=1pt, align=center},
+    activetab/.style={tab, fill=harmonyPrimary, text=harmonyWhite, draw=harmonyPrimary},
+    inactivetab/.style={tab, fill=harmonyGray100, text=harmonyGray500, draw=harmonyGray300}
+]
+    \node[rectangle, rounded corners=12pt, draw=harmonyGray300, fill=harmonyWhite, minimum width=12cm, minimum height=1.8cm, line width=1.5pt] (bar) {};
+    \node[inactivetab] (t1) at ([xshift=-3.5cm]bar.center) {\faChartBar\ Collecte};
+    \node[activetab] (t2) at (bar.center) {\faLanguage\ Traduction};
+    \node[inactivetab] (t3) at ([xshift=3.5cm]bar.center) {\faCog\ Réglages};
+\end{tikzpicture}
+\caption{Barre de navigation avec les trois onglets de l'application.}
+\label{fig:navbar}
+\end{figure}
+
+\section{Écran Collecte (Moniteur de capteurs)}
+
+Cet écran permet de \concept{visualiser en temps réel} les données brutes des capteurs de chaque gant et de \concept{collecter des échantillons} pour enrichir le jeu de données d'entraînement.
+
+\subsection{Panneau de collecte}
+
+En haut de l'écran, le \concept{panneau de labeling} permet de :
+\begin{itemize}
+    \item Sélectionner un \concept{label} (nom du geste) dans la liste déroulante.
+    \item Lancer l'enregistrement d'un échantillon de \textbf{66 points} de données capteurs.
+    \item Suivre la progression de la collecte via une barre de progression.
+\end{itemize}
+
+\subsection{Cartes des capteurs}
+
+Sous le panneau de collecte, deux \concept{cartes de capteurs} affichent les données en temps réel :
+
+\begin{table}[H]
+\centering
+\rowcolors{2}{harmonyGray100}{harmonyWhite}
+\begin{tabularx}{\textwidth}{>{\bfseries\sffamily}l X >{\sffamily}c}
+\toprule
+\textbf{\textcolor{harmonyPrimary}{Capteur}} & \textbf{\textcolor{harmonyPrimary}{Description}} & \textbf{\textcolor{harmonyPrimary}{Nombre}} \\
+\midrule
+Flex & Flexion de chaque doigt (Pouce, Index, Majeur, Annulaire, Auriculaire) — valeurs 0 à 4095 & 5 \\
+Accéléromètre & Accélération sur les axes X, Y, Z (ax, ay, az) & 3 \\
+Gyroscope & Vitesse angulaire sur les axes X, Y, Z (gx, gy, gz) & 3 \\
+Orientation & Yaw, Pitch, Roll en centièmes de degrés & 3 \\
+\midrule
+\multicolumn{2}{r}{\textbf{Total par gant :}} & \textbf{14} \\
+\bottomrule
+\end{tabularx}
+\caption{Capteurs disponibles pour chaque gant Harmony.}
+\label{tab:capteurs}
+\end{table}
+
+\screenshotplaceholder{ecran-collecte}{Écran Collecte — Panneau de labeling et cartes des capteurs Main Gauche / Main Droite.}
+
+\section{Écran Traduction}
+
+C'est l'écran \concept{principal} de l'application. Il est composé de :
+
+\begin{itemize}
+    \item Un \concept{panneau héro} en haut affichant le mot traduit en grand, avec le score de confiance et un bouton « Écouter ».
+    \item Un \concept{sélecteur de mode de lecture} : Mot ou Phrase.
+    \item Une \concept{barre de phrase} (en mode Phrase) pour afficher la phrase construite.
+    \item Des \concept{indicateurs de statut} : ESP32, Modèle, Scaler.
+    \item Un \concept{sélecteur de mode} : Manuel ou Temps réel.
+    \item Les \concept{contrôles de traduction} selon le mode sélectionné.
+\end{itemize}
+
+\screenshotplaceholder{ecran-traduction}{Écran Traduction — Panneau héro avec mot prédit, score de confiance et contrôles.}
+
+\section{Écran Réglages}
+
+L'écran de réglages regroupe toutes les options de configuration :
+
+\begin{definitionbox}[Connexion ESP32]
+Configuration de l'adresse IP et du port WebSocket. Boutons \concept{Connecter} et \concept{Déconnecter}. Affichage du statut de connexion en temps réel.
+\end{definitionbox}
+
+\begin{definitionbox}[Thème visuel]
+Quatre thèmes disponibles avec aperçu visuel :
+\begin{itemize}
+    \item \textbf{Shazam Blue} — thème clair à dominante bleue (par défaut)
+    \item \textbf{Shazam Orange} — thème sombre avec accents orange
+    \item \textbf{Doodle} — thème sombre avec fond bleu décoratif
+    \item \textbf{Chalk} — thème sombre style tableau noir
+\end{itemize}
+\end{definitionbox}
+
+\begin{definitionbox}[Labels de gestes]
+Gestion des labels pour la collecte de données : ajout, renommage, suppression de labels. Labels par défaut : \textit{bonjour, harmony, moi, appeler, merci}.
+\end{definitionbox}
+
+\begin{definitionbox}[Modèle \& Export]
+Informations sur le modèle IA chargé, options d'export des données collectées au format JSON.
+\end{definitionbox}
+
+\screenshotplaceholder{ecran-reglages}{Écran Réglages — Sections Connexion, Thème, Labels et Modèle.}
+
+
+% ════════════════════════════════════════════════════════════════
+%        CHAPITRE 4 — TRADUCTION DES GESTES
+% ════════════════════════════════════════════════════════════════
+
+\chapter{Traduction des gestes}
+
+Ce chapitre détaille les différentes méthodes de traduction disponibles dans Harmony.
+
+\section{Mode de lecture}
+
+Avant de traduire, choisissez votre \concept{mode de lecture} en haut de l'écran de traduction :
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{>{\bfseries\sffamily}l l X}
+\toprule
+\textbf{\textcolor{harmonyPrimary}{Mode}} & \textbf{\textcolor{harmonyPrimary}{Icône}} & \textbf{\textcolor{harmonyPrimary}{Comportement}} \\
+\midrule
+Mot & \faFont & Chaque geste traduit affiche un seul mot indépendant. \\
+Phrase & \faAlignLeft & Les mots traduits s'ajoutent automatiquement pour former une phrase complète. \\
+\bottomrule
+\end{tabularx}
+\caption{Modes de lecture disponibles.}
+\label{tab:modes-lecture}
+\end{table}
+
+\section{Traduction manuelle}
+\label{sec:trad-manuelle}
+
+Le mode manuel permet de capturer une séquence de gestes puis de lancer l'inférence.
+
+\subsection{Procédure pas à pas}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+    step/.style={rectangle, rounded corners=8pt, draw=harmonyPrimary, fill=harmonyLight, minimum width=2.8cm, minimum height=1.5cm, font=\sffamily\small\bfseries, text=harmonyDark, align=center, line width=1pt},
+    arr/.style={-{Stealth[length=3mm]}, line width=1.5pt, harmonyAccent}
+]
+    \node[step] (s1) {\faCircle\ \\ Enregistrer};
+    \node[step, right=1.2cm of s1] (s2) {\faStop\ \\ Arrêter};
+    \node[step, right=1.2cm of s2] (s3) {\faBrain\ \\ Prédire};
+    \node[step, right=1.2cm of s3, fill=harmonySuccess!15, draw=harmonySuccess] (s4) {\faCheckCircle\ \\ Résultat};
+    
+    \draw[arr] (s1) -- (s2);
+    \draw[arr] (s2) -- (s3);
+    \draw[arr] (s3) -- (s4);
+    
+    \node[below=0.3cm of s1, font=\sffamily\tiny, text=harmonyGray500] {Capturer les frames};
+    \node[below=0.3cm of s2, font=\sffamily\tiny, text=harmonyGray500] {Fin de capture};
+    \node[below=0.3cm of s3, font=\sffamily\tiny, text=harmonyGray500] {Inférence TFLite};
+    \node[below=0.3cm of s4, font=\sffamily\tiny, text=harmonyGray500] {Mot + confiance};
+\end{tikzpicture}
+\caption{Flux de la traduction manuelle.}
+\label{fig:flux-manuel}
+\end{figure}
+
+\begin{enumerate}
+    \item \textbf{Sélectionnez le mode « Manuel »} dans le sélecteur de mode.
+    \item \textbf{Appuyez sur « Enregistrer »} \faCircle\ — L'application commence à capturer les frames de données capteurs. L'indicateur \textcolor{harmonyError}{\textbf{REC}} s'affiche et le compteur de frames augmente.
+    \item \textbf{Effectuez le geste} avec les gants pendant 2 à 3 secondes.
+    \item \textbf{Appuyez sur « Arrêter »} \faStop\ — La capture s'arrête. Le nombre de frames capturées est affiché (ex : « 66 frames capturées »).
+    \item \textbf{Appuyez sur « Prédire »} \faBrain\ — Le modèle IA analyse les données. Un indicateur de chargement s'affiche pendant l'inférence.
+    \item \textbf{Consultez le résultat} — Le mot prédit apparaît en grand dans le panneau héro avec son score de confiance (ex : « harmony 95.2\% »).
+    \item \textbf{Réinitialiser} \faRedo\ — Appuyez pour effacer le résultat et recommencer un nouveau geste.
+\end{enumerate}
+
+\begin{infobox}
+\textbf{\faInfoCircle\ Conseil :} Pour une meilleure reconnaissance, effectuez le geste de manière fluide et complète. Le modèle est optimisé pour des séquences d'environ \textbf{66 frames} (soit environ 2 secondes à 30 Hz).
+\end{infobox}
+
+\section{Traduction en temps réel}
+\label{sec:trad-auto}
+
+Le mode temps réel analyse automatiquement et en continu les données des capteurs.
+
+\begin{enumerate}
+    \item \textbf{Sélectionnez le mode « Temps réel »} dans le sélecteur de mode.
+    \item \textbf{Appuyez sur « Démarrer »} — Le flux de données est analysé en continu.
+    \item \textbf{Effectuez des gestes} — Chaque lot de 66 frames est automatiquement envoyé au modèle pour inférence.
+    \item \textbf{Les résultats s'affichent en continu} dans le panneau héro et dans l'historique des prédictions.
+    \item \textbf{Appuyez sur « Arrêter »} pour stopper l'analyse.
+\end{enumerate}
+
+\begin{successbox}
+\statusok\ \textbf{Historique :} En mode temps réel, chaque prédiction est ajoutée à un historique consultable directement sous les contrôles. Cela permet de suivre l'évolution des traductions au fil du temps.
+\end{successbox}
+
+\section{Mode Phrase}
+\label{sec:mode-phrase}
+
+Le mode Phrase permet de \concept{construire des phrases complètes} en combinant plusieurs mots traduits.
+
+\begin{enumerate}
+    \item Activez le mode \concept{Phrase} via le sélecteur en haut de l'écran.
+    \item Chaque nouveau mot traduit (en mode manuel ou temps réel) est automatiquement ajouté à la phrase en cours.
+    \item Le geste \concept{« espace »} insère un espace entre les mots dans la phrase.
+    \item La phrase complète s'affiche dans la \concept{barre de phrase} avec les options :
+    \begin{itemize}
+        \item \faVolumeUp\ \textbf{Écouter} — Prononce la phrase entière avec la synthèse vocale.
+        \item \faTrash\ \textbf{Effacer} — Supprime la phrase et recommence à zéro.
+    \end{itemize}
+\end{enumerate}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+    word/.style={rectangle, rounded corners=4pt, fill=harmonyLight, draw=harmonyPrimary, font=\sffamily\bfseries, text=harmonyDark, inner sep=6pt, line width=0.8pt},
+    plus/.style={font=\sffamily\bfseries\large, text=harmonyAccent}
+]
+    \node[word] (w1) {bonjour};
+    \node[plus, right=0.3cm of w1] {+};
+    \node[word, right=0.3cm of w1.east, xshift=0.4cm] (w2) {moi};
+    \node[plus, right=0.3cm of w2] {+};
+    \node[word, right=0.3cm of w2.east, xshift=0.4cm] (w3) {appeler};
+
+    \node[below=1cm of w2, rectangle, rounded corners=6pt, fill=harmonyAccent!15, draw=harmonyAccent, minimum width=8cm, minimum height=1cm, font=\sffamily\bfseries, text=harmonyDark, line width=1pt] (result) {« bonjour moi appeler »};
+
+    \draw[-{Stealth}, harmonyAccent, line width=1pt] (w2) -- (result);
+\end{tikzpicture}
+\caption{Construction d'une phrase mot par mot en mode Phrase.}
+\label{fig:mode-phrase}
+\end{figure}
+
+\section{Synthèse vocale (TTS)}
+
+L'application intègre la \concept{synthèse vocale} en français pour prononcer les résultats :
+
+\begin{itemize}
+    \item \textbf{En mode Mot :} Appuyez sur le bouton \faVolumeUp\ \textbf{Écouter} dans le panneau héro pour entendre le mot traduit.
+    \item \textbf{En mode Phrase :} Appuyez sur \faVolumeUp\ dans la barre de phrase pour entendre la phrase complète.
+    \item La voix est configurée en \textbf{français (fr-FR)} avec un débit de parole modéré.
+\end{itemize}
+
+\begin{alertbox}
+\textbf{\faExclamationTriangle\ Note :} Le geste \textit{« espace »} n'est pas prononcé vocalement. Il sert uniquement de séparateur dans la construction de phrases.
+\end{alertbox}
+
+
+% ════════════════════════════════════════════════════════════════
+%        CHAPITRE 5 — DÉPANNAGE ET FAQ
+% ════════════════════════════════════════════════════════════════
+
+\chapter{Dépannage et FAQ}
+
+\section{Problèmes courants et solutions}
+
+\begin{table}[H]
+\centering
+\rowcolors{2}{harmonyGray100}{harmonyWhite}
+\begin{tabularx}{\textwidth}{>{\sffamily\small}p{3.5cm} >{\sffamily\small}X >{\sffamily\small}X}
+\toprule
+\textbf{\textcolor{harmonyPrimary}{Problème}} & \textbf{\textcolor{harmonyPrimary}{Cause possible}} & \textbf{\textcolor{harmonyPrimary}{Solution}} \\
+\midrule
+Gants non détectés & Mauvaise IP/port ou gants éteints & Vérifiez l'IP, le port et le réseau Wi-Fi. Redémarrez les gants. \\
+\addlinespace
+Indicateur « Modèle absent » & Fichier model.tflite manquant & Réinstallez l'application ou vérifiez le dossier assets. \\
+\addlinespace
+Prédictions erronées & Geste mal exécuté ou trop court & Effectuez le geste plus lentement, pendant 2-3 secondes. \\
+\addlinespace
+Confiance faible & Données bruitées ou geste inconnu & Vérifiez que le geste fait partie des classes reconnues (voir Annexe). \\
+\addlinespace
+Pas de son TTS & Volume système à zéro ou TTS non installé & Augmentez le volume. Installez un moteur TTS (ex: Google TTS). \\
+\addlinespace
+Connexion perdue & Wi-Fi instable ou gants hors portée & Rapprochez-vous du routeur/point d'accès ESP32. \\
+\bottomrule
+\end{tabularx}
+\caption{Tableau de dépannage des problèmes fréquents.}
+\label{tab:depannage}
+\end{table}
+
+\section{FAQ}
+
+\begin{definitionbox}[Puis-je utiliser un seul gant ?]
+Techniquement oui, mais la précision sera réduite. Le modèle est optimisé pour recevoir les données des \textbf{deux gants simultanément} (28 features = 14 par gant). Les données du gant manquant seront remplies par des zéros.
+\end{definitionbox}
+
+\begin{definitionbox}[Comment ajouter de nouveaux gestes ?]
+Utilisez l'onglet \concept{Collecte} pour enregistrer des échantillons d'un nouveau geste, puis exportez les données via les \concept{Réglages} pour ré-entraîner le modèle avec un script Python externe. Le nouveau fichier \tech{model.tflite} doit être replacé dans le dossier \tech{assets/}.
+\end{definitionbox}
+
+\begin{definitionbox}[L'application fonctionne-t-elle hors ligne ?]
+\textbf{Oui.} Une fois les gants connectés via Wi-Fi local, aucune connexion Internet n'est nécessaire. Le modèle d'IA fonctionne entièrement sur l'appareil (inférence locale via TFLite).
+\end{definitionbox}
+
+\begin{definitionbox}[Combien de gestes sont reconnus ?]
+La version actuelle reconnaît \textbf{4 classes de gestes} : \textit{appeler}, \textit{espace}, \textit{harmony} et \textit{moi}. Ce nombre peut être étendu en ré-entraînant le modèle avec de nouvelles données.
+\end{definitionbox}
+
+
+% ════════════════════════════════════════════════════════════════
+%        CHAPITRE 6 — ANNEXES
+% ════════════════════════════════════════════════════════════════
+
+\chapter{Annexes}
+
+\section{Liste des gestes supportés}
+
+\begin{table}[H]
+\centering
+\rowcolors{2}{harmonyGray100}{harmonyWhite}
+\begin{tabularx}{\textwidth}{>{\bfseries\sffamily}l >{\sffamily}l X}
+\toprule
+\textbf{\textcolor{harmonyPrimary}{Geste}} & \textbf{\textcolor{harmonyPrimary}{Classe}} & \textbf{\textcolor{harmonyPrimary}{Description}} \\
+\midrule
+Appeler & \tech{appeler} & Geste de la main mimant l'action d'appeler quelqu'un. \\
+Espace & \tech{espace} & Geste de séparation utilisé pour insérer un espace entre deux mots lors de la construction de phrases. \\
+Harmony & \tech{harmony} & Geste spécifique au projet, utilisé comme salutation ou identification. \\
+Moi & \tech{moi} & Geste de la main pointant vers soi pour désigner « moi ». \\
+\bottomrule
+\end{tabularx}
+\caption{Classes de gestes reconnues par le modèle Harmony v1.0.}
+\label{tab:gestes}
+\end{table}
+
+\section{Capteurs et features du modèle}
+
+Le modèle d'IA traite \concept{28 features} par frame (14 par gant) :
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+    sensor/.style={rectangle, rounded corners=4pt, minimum width=2cm, minimum height=0.7cm, font=\sffamily\scriptsize\bfseries, align=center, line width=0.8pt},
+    grp/.style={rectangle, rounded corners=8pt, draw=#1, fill=#1!8, minimum width=5cm, inner sep=10pt, line width=1pt}
+]
+    % Main Gauche
+    \node[grp=harmonyPrimary, minimum height=5.5cm] (lg) at (0,0) {};
+    \node[font=\sffamily\bfseries, text=harmonyPrimary] at ([yshift=2.2cm]lg.center) {\faHandPaper\ Main Gauche (14)};
+    
+    \node[sensor, fill=harmonyError!15, draw=harmonyError] at ([yshift=1.2cm]lg.center) {Gyro X, Y, Z (3)};
+    \node[sensor, fill=harmonyWarm!15, draw=harmonyWarm] at ([yshift=0.3cm]lg.center) {Accel X, Y, Z (3)};
+    \node[sensor, fill=harmonySuccess!15, draw=harmonySuccess] at ([yshift=-0.6cm]lg.center) {Flex × 5 doigts (5)};
+    \node[sensor, fill=harmonyPrimary!15, draw=harmonyPrimary] at ([yshift=-1.5cm]lg.center) {Yaw, Pitch, Roll (3)};
+
+    % Main Droite
+    \node[grp=harmonyAccent, minimum height=5.5cm] (rg) at (7,0) {};
+    \node[font=\sffamily\bfseries, text=harmonyAccent] at ([yshift=2.2cm]rg.center) {\faHandPaper\ Main Droite (14)};
+    
+    \node[sensor, fill=harmonyError!15, draw=harmonyError] at ([yshift=1.2cm]rg.center) {Gyro X, Y, Z (3)};
+    \node[sensor, fill=harmonyWarm!15, draw=harmonyWarm] at ([yshift=0.3cm]rg.center) {Accel X, Y, Z (3)};
+    \node[sensor, fill=harmonySuccess!15, draw=harmonySuccess] at ([yshift=-0.6cm]rg.center) {Flex × 5 doigts (5)};
+    \node[sensor, fill=harmonyPrimary!15, draw=harmonyPrimary] at ([yshift=-1.5cm]rg.center) {Yaw, Pitch, Roll (3)};
+
+    % Total
+    \node[rectangle, rounded corners=6pt, fill=harmonyDark, text=harmonyWhite, font=\sffamily\bfseries, inner sep=8pt] at (3.5,-3.8) {Total : 28 features × 90 frames max = entrée du modèle};
+\end{tikzpicture}
+\caption{Répartition des 28 features d'entrée du modèle TFLite.}
+\label{fig:features}
+\end{figure}
+
+\section{Glossaire technique}
+
+\begin{longtable}{>{\bfseries\sffamily\color{harmonyPrimary}}l >{\sffamily}p{10cm}}
+\toprule
+\textbf{Terme} & \textbf{Définition} \\
+\midrule
+\endhead
+ESP32 & Microcontrôleur Wi-Fi/Bluetooth développé par Espressif, utilisé dans les gants Harmony. \\
+\addlinespace
+TFLite & TensorFlow Lite — framework d'IA optimisé pour l'inférence sur appareils mobiles et embarqués. \\
+\addlinespace
+WebSocket & Protocole de communication bidirectionnelle en temps réel entre les gants et l'application. \\
+\addlinespace
+IMU & Inertial Measurement Unit — unité de mesure inertielle combinant accéléromètre et gyroscope. \\
+\addlinespace
+Flex sensor & Capteur de flexion mesurant la courbure d'un doigt (résistance variable). \\
+\addlinespace
+TTS & Text-to-Speech — synthèse vocale convertissant du texte en parole. \\
+\addlinespace
+Frame & Un échantillon complet de données capteurs à un instant donné (28 valeurs). \\
+\addlinespace
+Inférence & Processus d'exécution du modèle IA pour produire une prédiction à partir de données d'entrée. \\
+\addlinespace
+Scaler & Composant de normalisation des données (StandardScaler) qui centre et réduit les features. \\
+\addlinespace
+LSC & Langue des Signes Camerounaise. \\
+\addlinespace
+APK & Android Package Kit — format de fichier d'installation pour applications Android. \\
+\addlinespace
+YPR & Yaw, Pitch, Roll — les trois angles d'orientation spatiale d'un objet. \\
+\bottomrule
+\end{longtable}

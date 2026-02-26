@@ -1,0 +1,564 @@
+%!TEX encoding = UTF-8 Unicode
+%!TEX program = xelatex
+\documentclass[11pt,a4paper]{report}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage[a4paper, top=2.5cm, bottom=2.5cm, left=2.5cm, right=2.5cm]{geometry}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{subcaption}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{longtable}
+\usepackage{colortbl}
+\usepackage{multirow}
+\usepackage{enumitem}
+\usepackage{tikz}
+\usetikzlibrary{positioning, calc, shadows, shapes.geometric, arrows.meta, fit, backgrounds}
+\usepackage{titlesec}
+\usepackage{tocloft}
+\usepackage{fancyhdr}
+\usepackage{caption}
+\usepackage{tcolorbox}
+\tcbuselibrary{skins, breakable, listings}
+\usepackage{fontawesome5}
+\usepackage{hyperref}
+\usepackage{xurl}
+\usepackage{listings}
+\Urlmuskip=0mu plus 1mu
+
+% ── Couleurs ──
+\definecolor{harmonyPrimary}{RGB}{37, 99, 235}
+\definecolor{harmonyDark}{RGB}{30, 64, 175}
+\definecolor{harmonyLight}{RGB}{219, 234, 254}
+\definecolor{harmonyAccent}{RGB}{16, 185, 129}
+\definecolor{harmonyWarm}{RGB}{245, 158, 11}
+\definecolor{harmonyGray900}{RGB}{17, 24, 39}
+\definecolor{harmonyGray700}{RGB}{55, 65, 81}
+\definecolor{harmonyGray500}{RGB}{107, 114, 128}
+\definecolor{harmonyGray300}{RGB}{209, 213, 219}
+\definecolor{harmonyGray100}{RGB}{243, 244, 246}
+\definecolor{harmonyWhite}{RGB}{255, 255, 255}
+\definecolor{harmonySuccess}{RGB}{34, 197, 94}
+\definecolor{harmonyWarning}{RGB}{234, 179, 8}
+\definecolor{harmonyError}{RGB}{239, 68, 68}
+\definecolor{codebg}{RGB}{30, 30, 46}
+\definecolor{codegreen}{RGB}{166, 227, 161}
+\definecolor{codeyellow}{RGB}{249, 226, 175}
+\definecolor{codeblue}{RGB}{137, 180, 250}
+\definecolor{codegray}{RGB}{147, 153, 178}
+
+\hypersetup{
+    colorlinks=true, linkcolor=harmonyDark,
+    urlcolor=harmonyPrimary, citecolor=harmonyDark,
+    bookmarksnumbered=true
+}
+
+% ── Listings YAML ──
+\lstdefinelanguage{yaml}{
+  keywords={name, on, push, pull_request, jobs, runs-on, steps, uses, with, run, if, env, secrets, needs, defaults, working-directory, distribution, java-version, flutter-version, channel, cache, path, true, false},
+  sensitive=false,
+  comment=[l]{\#},
+  morestring=[b]',
+  morestring=[b]"
+}
+
+\lstset{
+  language=yaml,
+  basicstyle=\ttfamily\small\color{harmonyWhite},
+  backgroundcolor=\color{codebg},
+  keywordstyle=\color{codeblue}\bfseries,
+  stringstyle=\color{codegreen},
+  commentstyle=\color{codegray}\itshape,
+  identifierstyle=\color{codeyellow},
+  frame=none,
+  rulecolor=\color{harmonyGray300},
+  breaklines=true,
+  showstringspaces=false,
+  tabsize=2,
+  xleftmargin=12pt,
+  xrightmargin=12pt,
+  aboveskip=10pt,
+  belowskip=10pt
+}
+
+% ── Code box ──
+\newtcolorbox{codebox}[1][]{
+    enhanced, breakable,
+    colback=codebg, colframe=harmonyGray700,
+    boxrule=1pt, arc=6pt,
+    left=4pt, right=4pt, top=6pt, bottom=6pt,
+    #1
+}
+
+% ── Boites ──
+\newtcolorbox{infobox}[1][]{
+    enhanced, breakable,
+    colback=harmonyLight, colframe=harmonyPrimary,
+    boxrule=0pt, leftrule=4pt, arc=0pt, outer arc=0pt,
+    left=12pt, right=12pt, top=10pt, bottom=10pt, #1
+}
+\newtcolorbox{definitionbox}[1][]{
+    enhanced, breakable,
+    colback=harmonyGray100, colframe=harmonyGray300,
+    fonttitle=\bfseries\sffamily, title=#1,
+    boxrule=1pt, arc=6pt,
+    left=12pt, right=12pt, top=8pt, bottom=8pt,
+    attach boxed title to top left={yshift=-3mm, xshift=10pt},
+    boxed title style={colback=harmonyPrimary, arc=3pt}
+}
+\newtcolorbox{processbox}[1][]{
+    enhanced, breakable,
+    colback=harmonyWhite, colframe=harmonyGray300,
+    boxrule=1pt, arc=8pt,
+    left=15pt, right=15pt, top=12pt, bottom=12pt,
+    shadow={2pt}{-2pt}{0pt}{harmonyGray300}, #1
+}
+\newtcolorbox{alertbox}[1][]{
+    enhanced, breakable,
+    colback=harmonyWarm!10, colframe=harmonyWarm,
+    boxrule=0pt, leftrule=4pt, arc=0pt,
+    left=12pt, right=12pt, top=10pt, bottom=10pt, #1
+}
+\newtcolorbox{successbox}[1][]{
+    enhanced, breakable,
+    colback=harmonySuccess!10, colframe=harmonySuccess,
+    boxrule=0pt, leftrule=4pt, arc=0pt,
+    left=12pt, right=12pt, top=10pt, bottom=10pt, #1
+}
+
+% ── Chapitres ──
+\titleformat{\chapter}[display]
+    {\normalfont\huge\bfseries\sffamily}
+    {\begin{tikzpicture}[remember picture, overlay]
+        \fill[harmonyPrimary] (current page.north west) rectangle ([yshift=-3cm]current page.north east);
+        \fill[harmonyAccent] ([yshift=-3cm]current page.north west) rectangle ([yshift=-3.15cm]current page.north east);
+        \node[anchor=east, text=harmonyWhite, font=\fontsize{72}{80}\selectfont\bfseries\sffamily]
+            at ([xshift=-2cm, yshift=-1.5cm]current page.north east) {\thechapter};
+    \end{tikzpicture}}
+    {0pt}{\vspace{2cm}\textcolor{harmonyDark}}
+    [\vspace{0.5cm}{\color{harmonyGray300}\titlerule[2pt]}]
+
+\titleformat{name=\chapter,numberless}[display]
+    {\normalfont\huge\bfseries\sffamily}
+    {\begin{tikzpicture}[remember picture, overlay]
+        \fill[harmonyPrimary] (current page.north west) rectangle ([yshift=-2cm]current page.north east);
+        \fill[harmonyAccent] ([yshift=-2cm]current page.north west) rectangle ([yshift=-2.1cm]current page.north east);
+    \end{tikzpicture}}
+    {0pt}{\vspace{1cm}\textcolor{harmonyDark}}
+    [\vspace{0.5cm}{\color{harmonyGray300}\titlerule[2pt]}]
+\titlespacing*{\chapter}{0pt}{0pt}{40pt}
+
+\titleformat{\section}
+    {\normalfont\Large\bfseries\sffamily\color{harmonyPrimary}}
+    {\colorbox{harmonyPrimary}{\textcolor{harmonyWhite}{\hspace{8pt}\thesection\hspace{8pt}}}\hspace{12pt}}
+    {0pt}{}[{\color{harmonyGray300}\titlerule[1pt]}]
+\titlespacing*{\section}{0pt}{30pt}{15pt}
+
+\titleformat{\subsection}
+    {\normalfont\large\bfseries\sffamily\color{harmonyDark}}
+    {\textcolor{harmonyPrimary}{\thesubsection}\hspace{10pt}}{0pt}{}
+\titlespacing*{\subsection}{0pt}{20pt}{10pt}
+
+\titleformat{\subsubsection}
+    {\normalfont\normalsize\bfseries\sffamily\color{harmonyGray700}}
+    {\textcolor{harmonyAccent}{\thesubsubsection}\hspace{8pt}}{0pt}{}
+
+% ── Table des matieres ──
+\renewcommand{\cfttoctitlefont}{\Huge\bfseries\sffamily\color{harmonyDark}}
+\renewcommand{\cftchapfont}{\bfseries\sffamily\color{harmonyPrimary}}
+\renewcommand{\cftchappagefont}{\bfseries\color{harmonyPrimary}}
+\renewcommand{\cftsecfont}{\sffamily\color{harmonyGray900}}
+\renewcommand{\cftsubsecfont}{\sffamily\color{harmonyGray500}}
+\setlength{\cftbeforechapskip}{12pt}
+\setlength{\cftbeforesecskip}{6pt}
+\renewcommand{\cftloftitlefont}{\Huge\bfseries\sffamily\color{harmonyDark}}
+\renewcommand{\cftfigfont}{\sffamily Figure }
+\renewcommand{\cftlottitlefont}{\Huge\bfseries\sffamily\color{harmonyDark}}
+\renewcommand{\cfttabfont}{\sffamily Tableau }
+
+\captionsetup{
+    labelfont={bf, sf, color=harmonyPrimary},
+    textfont={sf, color=harmonyGray700},
+    labelsep=period, justification=centering,
+    font=small, skip=10pt
+}
+
+% ── En-tetes ──
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\sffamily\small\textcolor{harmonyGray500}{\leftmark}}
+\fancyhead[R]{\sffamily\small\textcolor{harmonyPrimary}{\textbf{Harmony Gloves}}}
+\fancyfoot[C]{\begin{tikzpicture}[baseline]
+    \node[fill=harmonyPrimary, text=harmonyWhite, rounded corners=3pt, inner sep=5pt, font=\sffamily\small\bfseries] {\thepage};
+\end{tikzpicture}}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\headrule}{\vspace{2pt}{\color{harmonyGray300}\hrule height 1pt}\vspace{1pt}{\color{harmonyAccent}\hrule height 2pt width 0.3\textwidth}}
+\fancypagestyle{plain}{
+    \fancyhf{}
+    \fancyfoot[C]{\begin{tikzpicture}[baseline]
+        \node[fill=harmonyPrimary, text=harmonyWhite, rounded corners=3pt, inner sep=5pt, font=\sffamily\small\bfseries] {\thepage};
+    \end{tikzpicture}}
+    \renewcommand{\headrulewidth}{0pt}
+}
+
+% ── Listes ──
+\setlist[itemize,1]{label=\textcolor{harmonyPrimary}{\faChevronRight}, leftmargin=*, itemsep=6pt}
+\setlist[itemize,2]{label=\textcolor{harmonyAccent}{$\circ$}, leftmargin=*, itemsep=4pt}
+\setlist[enumerate,1]{label=\protect\circlednum{\arabic*}, leftmargin=*, itemsep=8pt}
+\newcommand*\circlednum[1]{\tikz[baseline=(char.base)]{\node[shape=circle, fill=harmonyPrimary, text=harmonyWhite, inner sep=2pt, font=\sffamily\small\bfseries] (char) {#1};}}
+
+% ── Commandes utilitaires ──
+\newcommand{\concept}[1]{\textcolor{harmonyPrimary}{\textbf{#1}}}
+\newcommand{\tech}[1]{\texttt{\textcolor{harmonyDark}{#1}}}
+\newcommand{\flowto}{\textcolor{harmonyAccent}{\faArrowRight}}
+\newcommand{\statusok}{\textcolor{harmonySuccess}{\faCheckCircle}}
+\newcommand{\statuswarn}{\textcolor{harmonyWarning}{\faExclamationTriangle}}
+\newcommand{\statusno}{\textcolor{harmonyError}{\faTimesCircle}}
+\newcommand{\elegantsep}{\begin{center}\vspace{10pt}\textcolor{harmonyGray300}{\rule{0.2\textwidth}{0.5pt}\hspace{10pt}\textcolor{harmonyAccent}{\faDiamond}\hspace{10pt}\rule{0.2\textwidth}{0.5pt}}\vspace{10pt}\end{center}}
+
+\begin{document}
+
+% ════════════════════════════════════════════════════════════════
+%                         PAGE DE TITRE
+% ════════════════════════════════════════════════════════════════
+
+\begin{titlepage}
+    \begin{tikzpicture}[remember picture, overlay]
+        \fill[harmonyGray900] (current page.south west) rectangle (current page.north east);
+        \fill[harmonyPrimary, opacity=0.8] (current page.north west) -- ++(0,-8) -- ++(21,0) -- ++(0,8) -- cycle;
+        \fill[harmonyDark, opacity=0.9] (current page.north west) -- ++(0,-6) -- ++(15,0) -- ++(6,-2) -- ++(0,8) -- cycle;
+        \foreach \x/\y/\r/\o in {15/-5/3/0.1, 18/-8/2/0.15, 3/-12/4/0.08, 17/-18/2.5/0.12} {
+            \fill[harmonyAccent, opacity=\o] (\x,-\y) circle (\r);
+        }
+        \draw[harmonyAccent, line width=2pt, opacity=0.5] (0,-10) -- (21,-10);
+        \node[anchor=center] at (10.5,-4) {
+            \begin{tikzpicture}
+                \node[circle, fill=harmonyWhite, minimum size=3cm, opacity=0.1] {};
+                \node[circle, fill=harmonyAccent, minimum size=2cm, opacity=0.2] {};
+                \node[text=harmonyWhite, font=\fontsize{48}{50}\selectfont] {\faRocket};
+            \end{tikzpicture}
+        };
+        \node[anchor=center, text=harmonyWhite] at (10.5,-9) {
+            \begin{minipage}{16cm}
+                \centering
+                {\fontsize{14}{16}\selectfont\sffamily\textcolor{harmonyAccent}{GUIDE DE D\'EPLOIEMENT}}\\[0.8cm]
+                {\fontsize{56}{60}\selectfont\bfseries\sffamily HARMONY}\\[0.2cm]
+                {\fontsize{56}{60}\selectfont\bfseries\sffamily GLOVES}\\[1cm]
+                {\color{harmonyGray300}\rule{8cm}{1pt}}\\[1cm]
+                {\fontsize{18}{22}\selectfont\sffamily CI/CD avec GitHub Actions}
+            \end{minipage}
+        };
+        \node[anchor=south, text=harmonyWhite] at (10.5,-26) {
+            \begin{minipage}{16cm}
+                \centering
+                \begin{tikzpicture}
+                    \node[fill=harmonyGray700, rounded corners=8pt, inner sep=15pt] {
+                        \begin{tabular}{c@{\hspace{3cm}}c@{\hspace{3cm}}c}
+                            \textcolor{harmonyAccent}{\faUsers} & \textcolor{harmonyAccent}{\faCalendarAlt} & \textcolor{harmonyAccent}{\faGithub} \\[5pt]
+                            \textcolor{harmonyWhite}{\sffamily\small \'Equipe Harmony} &
+                            \textcolor{harmonyWhite}{\sffamily\small F\'evrier 2026} &
+                            \textcolor{harmonyWhite}{\sffamily\small GitHub Actions}
+                        \end{tabular}
+                    };
+                \end{tikzpicture}
+            \end{minipage}
+        };
+    \end{tikzpicture}
+\end{titlepage}
+
+\newpage
+\tableofcontents
+\newpage
+
+% ════════════════════════════════════════════════════════════════
+%             CHAPITRE 1 --- INTRODUCTION
+% ════════════════════════════════════════════════════════════════
+
+\chapter{Introduction au d\'eploiement}
+
+\section{Objectif du guide}
+
+Ce document d\'ecrit la proc\'edure compl\`ete pour \concept{automatiser la compilation, les tests et la distribution} de l'application mobile Harmony Gloves. Le pipeline CI/CD repose sur \concept{GitHub Actions}, un service d'int\'egration continue int\'egr\'e directement dans le d\'ep\^ot GitHub du projet.
+
+\begin{infobox}
+\textbf{\faInfoCircle\ Qu'est-ce que le CI/CD ?}\\[6pt]
+\textbf{CI} (Continuous Integration) : chaque modification du code d\'eclenche automatiquement la compilation et les tests.\\
+\textbf{CD} (Continuous Delivery) : l'APK compil\'e est automatiquement mis \`a disposition sous forme d'artifact t\'el\'echargeable.
+\end{infobox}
+
+\section{Vue d'ensemble du pipeline}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+    node distance=1.2cm,
+    step/.style={rectangle, rounded corners=8pt, draw=#1, fill=#1!12, text=harmonyGray900, minimum width=2.6cm, minimum height=1.4cm, font=\sffamily\small\bfseries, line width=1pt, align=center},
+    arr/.style={-{Stealth[length=3mm]}, line width=1.5pt, harmonyAccent}
+]
+    \node[step=harmonyPrimary] (push) {\faCodeBranch\\[2pt] Push / PR};
+    \node[step=harmonyWarm, right=1cm of push] (trigger) {\faGithub\\[2pt] GitHub\\Actions};
+    \node[step=harmonyDark, right=1cm of trigger] (build) {\faHammer\\[2pt] Build\\APK};
+    \node[step=harmonyAccent, right=1cm of build] (test) {\faVial\\[2pt] Tests};
+    \node[step=harmonySuccess, right=1cm of test] (artifact) {\faDownload\\[2pt] Artifact\\APK};
+
+    \draw[arr] (push) -- (trigger);
+    \draw[arr] (trigger) -- (build);
+    \draw[arr] (build) -- (test);
+    \draw[arr] (test) -- (artifact);
+\end{tikzpicture}
+\caption{Pipeline CI/CD Harmony Gloves.}
+\label{fig:pipeline}
+\end{figure}
+
+\section{Pr\'erequis}
+
+\begin{processbox}
+\begin{tabularx}{\textwidth}{>{\bfseries\sffamily}l X}
+\faGithub\ Compte GitHub & Un compte GitHub avec acc\`es en \'ecriture au d\'ep\^ot Harmony. \\[8pt]
+\faCodeBranch\ D\'ep\^ot & Le code source du projet pouss\'e sur un d\'ep\^ot GitHub. \\[8pt]
+\faKey\ Secrets & (Optionnel) Keystore de signature APK configur\'e dans les secrets du d\'ep\^ot. \\[8pt]
+\faLaptop\ Local & Git install\'e localement pour pousser les modifications.
+\end{tabularx}
+\end{processbox}
+
+
+% ════════════════════════════════════════════════════════════════
+%        CHAPITRE 2 --- ARCHITECTURE DU PIPELINE CI/CD
+% ════════════════════════════════════════════════════════════════
+
+\chapter{Architecture du pipeline CI/CD}
+
+\section{Structure du d\'ep\^ot}
+
+Le workflow GitHub Actions est d\'efini dans le fichier suivant :
+
+Le diagramme ci-dessous illustre l'emplacement du fichier de workflow dans le d\'ep\^ot :
+
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+    folder/.style={rectangle, rounded corners=4pt, draw=harmonyPrimary, fill=harmonyLight, font=\sffamily\small\bfseries, text=harmonyDark, inner sep=6pt, minimum width=2.5cm},
+    file/.style={rectangle, rounded corners=3pt, draw=harmonyGray300, fill=harmonyGray100, font=\ttfamily\small, text=harmonyGray700, inner sep=5pt},
+    conn/.style={-, harmonyGray300, line width=0.8pt}
+]
+    \node[folder] (root) {\faFolder\ Harmony\_front};
+    \node[folder, below left=1.2cm and 1cm of root] (gh) {\faFolder\ .github};
+    \node[folder, below=0.8cm of gh] (wf) {\faFolder\ workflows};
+    \node[file, below=0.8cm of wf] (yml) {\faFileCode\ flutter\_build.yml};
+
+    \node[folder, below=1.2cm of root] (android) {\faFolder\ android};
+    \node[folder, below right=1.2cm and 1cm of root] (lib) {\faFolder\ lib};
+    \node[file, right=0.5cm of lib] (pubspec) {\faFileAlt\ pubspec.yaml};
+
+    \draw[conn] (root) -- (gh);
+    \draw[conn] (gh) -- (wf);
+    \draw[conn] (wf) -- (yml);
+    \draw[conn] (root) -- (android);
+    \draw[conn] (root) -- (lib);
+    \draw[conn] (root.east) -- ++(0.3,0) |- (pubspec);
+\end{tikzpicture}
+\caption{Emplacement du fichier de workflow dans le d\'ep\^ot.}
+\label{fig:structure-repo}
+\end{figure}
+
+\section{Workflow actuel : \tech{flutter\_build.yml}}
+
+Voici le workflow actuellement en place dans le projet :
+
+\begin{codebox}
+\begin{lstlisting}
+name: Flutter Build
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: .
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.24.0"
+          channel: stable
+          cache: true
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+      - name: Install Android NDK
+        run: sdkmanager "ndk;27.0.12077973"
+      - name: Install dependencies
+        run: flutter pub get
+      - name: Build APK
+        run: flutter build apk --release
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release-apk
+          path: build/app/outputs/flutter-apk/
+                app-release.apk
+\end{lstlisting}
+\end{codebox}
+
+\section{D\'ecomposition des \'etapes}
+
+\begin{table}[H]
+\centering
+\rowcolors{2}{harmonyGray100}{harmonyWhite}
+\begin{tabularx}{\textwidth}{c c >{\bfseries\sffamily\small}l >{\sffamily\small}X}
+\toprule
+\textbf{\textcolor{harmonyPrimary}{\#}} & \textbf{\textcolor{harmonyPrimary}{}} & \textbf{\textcolor{harmonyPrimary}{\'Etape}} & \textbf{\textcolor{harmonyPrimary}{Description}} \\
+\midrule
+\circlednum{1} & \textcolor{harmonyAccent}{\faCodeBranch} & Checkout & Clone le code source du d\'ep\^ot. \\
+\addlinespace
+\circlednum{2} & \textcolor{harmonyAccent}{\faJava} & Setup Java 17 & Installe le JDK Temurin 17 pour Gradle. \\
+\addlinespace
+\circlednum{3} & \textcolor{harmonyAccent}{\faMobileAlt} & Setup Flutter 3.24 & Installe le SDK Flutter avec cache. \\
+\addlinespace
+\circlednum{4} & \textcolor{harmonyAccent}{\faAndroid} & Setup Android SDK & Configure le SDK Android. \\
+\addlinespace
+\circlednum{5} & \textcolor{harmonyAccent}{\faMicrochip} & Install NDK 27 & Installe le NDK pour TFLite natif. \\
+\addlinespace
+\circlednum{6} & \textcolor{harmonyAccent}{\faDownload} & flutter pub get & T\'el\'echarge les d\'ependances Dart. \\
+\addlinespace
+\circlednum{7} & \textcolor{harmonyAccent}{\faHammer} & flutter build apk & Compile l'APK en mode release. \\
+\addlinespace
+\circlednum{8} & \textcolor{harmonyAccent}{\faCloudUploadAlt} & Upload Artifact & Archive l'APK comme artifact GitHub. \\
+\bottomrule
+\end{tabularx}
+\caption{Les 8 \'etapes du workflow \tech{flutter\_build.yml}.}
+\label{fig:etapes-workflow}
+\end{table}
+
+\begin{infobox}
+\textbf{\faInfoCircle\ D\'eclencheurs :} Le workflow se lance automatiquement sur \textbf{tout push} (quelle que soit la branche) et sur \textbf{toute pull request}. Cela garantit que chaque modification est valid\'ee avant d'\^etre fusionn\'ee.
+\end{infobox}
+
+
+% ════════════════════════════════════════════════════════════════
+%     CHAPITRE 3 --- CONFIGURATION DU D\'EP\^OT GITHUB
+% ════════════════════════════════════════════════════════════════
+
+\chapter{Configuration du d\'ep\^ot GitHub}
+
+\section{Cr\'eation et initialisation du d\'ep\^ot}
+
+\begin{enumerate}
+    \item Cr\'eez un nouveau d\'ep\^ot sur GitHub (public ou priv\'e).
+    \item Initialisez Git localement dans le dossier du projet :
+\end{enumerate}
+
+\begin{codebox}
+\begin{lstlisting}[language=bash]
+git init
+git remote add origin https://github.com/
+    votre-user/Harmony_front.git
+git add .
+git commit -m "Initial commit"
+git push -u origin main
+\end{lstlisting}
+\end{codebox}
+
+\section{Gestion des branches}
+
+\begin{processbox}
+Nous recommandons la strat\'egie de branches suivante :
+
+\begin{tabularx}{\textwidth}{>{\bfseries\sffamily\color{harmonyPrimary}}l X}
+\faCodeBranch\ main & Branche de production. Chaque commit d\'eclenche un build et produit un APK stable. \\[8pt]
+\faCodeBranch\ develop & Branche de d\'eveloppement. Les fonctionnalit\'es en cours y sont int\'egr\'ees. \\[8pt]
+\faCodeBranch\ feature/* & Branches de fonctionnalit\'es individuelles, fusionn\'ees dans \tech{develop} via Pull Request.
+\end{tabularx}
+\end{processbox}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+    commit/.style={circle, fill=#1, minimum size=0.4cm, inner sep=0pt},
+    branchlbl/.style={rectangle, rounded corners=4pt, fill=#1!15, draw=#1, font=\sffamily\scriptsize\bfseries, text=#1, inner sep=4pt}
+]
+    % main
+    \node[branchlbl=harmonyPrimary] (lmain) at (0, 0) {main};
+    \foreach \i in {1,...,5} {
+        \node[commit=harmonyPrimary] (m\i) at (\i*1.5, 0) {};
+    }
+    \draw[harmonyPrimary, line width=2pt] (lmain) -- (m1);
+    \foreach \i [count=\j from 2] in {1,...,4} {
+        \draw[harmonyPrimary, line width=2pt] (m\i) -- (m\j);
+    }
+
+    % develop
+    \node[branchlbl=harmonyAccent] (ldev) at (0, -1.5) {develop};
+    \foreach \i in {1,...,4} {
+        \pgfmathsetmacro{\xpos}{\i*1.5 + 0.5}
+        \node[commit=harmonyAccent] (d\i) at (\xpos, -1.5) {};
+    }
+    \draw[harmonyAccent, line width=1.5pt] (m1) -- (d1);
+    \foreach \i [count=\j from 2] in {1,...,3} {
+        \draw[harmonyAccent, line width=1.5pt] (d\i) -- (d\j);
+    }
+    \draw[harmonyAccent, line width=1.5pt, dashed] (d2) -- (m3);
+    \draw[harmonyAccent, line width=1.5pt, dashed] (d4) -- (m5);
+
+    % feature
+    \node[branchlbl=harmonyWarm] (lfeat) at (0, -3) {feature/tts};
+    \node[commit=harmonyWarm] (f1) at (3, -3) {};
+    \node[commit=harmonyWarm] (f2) at (4.5, -3) {};
+    \draw[harmonyWarm, line width=1pt] (d1) -- (f1);
+    \draw[harmonyWarm, line width=1pt] (f1) -- (f2);
+    \draw[harmonyWarm, line width=1pt, dashed] (f2) -- (d3);
+\end{tikzpicture}
+\caption{Strat\'egie de branches recommand\'ee (Git Flow simplifi\'e).}
+\label{fig:gitflow}
+\end{figure}
+
+\section{Gestion des secrets GitHub}
+
+Pour la signature de l'APK en production, des secrets doivent \^etre configur\'es :
+
+\begin{enumerate}
+    \item Naviguez vers \concept{Settings} \flowto\ \concept{Secrets and variables} \flowto\ \concept{Actions} dans votre d\'ep\^ot GitHub.
+    \item Ajoutez les secrets suivants :
+\end{enumerate}
+
+\begin{table}[H]
+\centering
+\rowcolors{2}{harmonyGray100}{harmonyWhite}
+\begin{tabularx}{\textwidth}{>{\bfseries\sffamily\small}l >{\sffamily\small}X}
+\toprule
+\textbf{\textcolor{harmonyPrimary}{Secret}} & \textbf{\textcolor{harmonyPrimary}{Description}} \\
+\midrule
+KEYSTORE\_BASE64 & Le keystore encod\'e en base64 (voir chapitre~\ref{chap:signature}). \\
+KEY\_ALIAS & L'alias de la cl\'e dans le keystore (ex : \tech{harmony-key}). \\
+KEY\_PASSWORD & Le mot de passe de la cl\'e. \\
+STORE\_PASSWORD & Le mot de passe du keystore. \\
+\bottomrule
+\end{tabularx}
+\caption{Secrets GitHub requis pour la signature APK.}
+\label{tab:secrets}
+\end{table}
+
+\begin{alertbox}
+\textbf{\faLock\ S\'ecurit\'e :} Les secrets GitHub sont chiffr\'es et ne sont jamais affich\'es dans les logs. Ne les partagez jamais dans le code source ou dans les messages de commit.
+\end{alertbox}
+
+\input{guide_deploy_ch4_7.tex}
+
+\end{document}

@@ -104,16 +104,14 @@ class ConnectionProvider extends ChangeNotifier {
         if (connected) {
           _setStatus(ConnectionStatus.connected, 'Connecte a $_ip:$_port');
         } else {
-          // Only show timeout message if we were connecting (not if data stops)
           final msg = _status == ConnectionStatus.connecting
-              ? 'Echec: aucune reponse de $_ip:$_port (timeout)'
+              ? 'Impossible de joindre $_ip:$_port'
               : 'Connexion perdue avec $_ip:$_port';
           _setStatus(ConnectionStatus.disconnected, msg);
         }
       },
       onError: (error) {
-        _setStatus(ConnectionStatus.disconnected,
-            'Erreur de connexion: $error');
+        _setStatus(ConnectionStatus.disconnected, error);
       },
     );
   }

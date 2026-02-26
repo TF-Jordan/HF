@@ -16,7 +16,7 @@ import '../../widgets/common/status_indicator.dart';
 /// Reading mode for predictions.
 enum ReadingMode { word, phrase }
 
-/// The Translation tab — exclusive manual/auto modes with diamond button layout.
+/// The Translation tab — exclusive manual/auto modes.
 class TranslationScreen extends StatefulWidget {
   const TranslationScreen({super.key});
 
@@ -27,7 +27,6 @@ class TranslationScreen extends StatefulWidget {
 class _TranslationScreenState extends State<TranslationScreen> {
   final List<String> _phraseWords = [];
   final FlutterTts _tts = FlutterTts();
-  bool _ttsEnabled = false;
   ReadingMode _readingMode = ReadingMode.word;
 
   // Track last processed outputs for phrase auto-append
@@ -79,7 +78,6 @@ class _TranslationScreenState extends State<TranslationScreen> {
 
     setState(() {
       if (word.toLowerCase() == 'espace') {
-        // "espace" → add a space marker (we join with empty string in phrase mode)
         _phraseWords.add(' ');
       } else {
         _phraseWords.add(word);
@@ -93,7 +91,6 @@ class _TranslationScreenState extends State<TranslationScreen> {
     final word = _extractWord(output);
     if (!_isValidWord(word)) return;
 
-    // Schedule setState after build
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       setState(() {
@@ -103,11 +100,6 @@ class _TranslationScreenState extends State<TranslationScreen> {
           _phraseWords.add(word);
         }
       });
-
-      // Auto-speak in TTS mode
-      if (_ttsEnabled) {
-        _speakWord(word);
-      }
     });
   }
 
@@ -121,15 +113,19 @@ class _TranslationScreenState extends State<TranslationScreen> {
           buffer.write(' ');
         }
       } else {
+        // Add space between consecutive words
+        if (buffer.isNotEmpty && !buffer.toString().endsWith(' ')) {
+          buffer.write(' ');
+        }
         buffer.write(w);
       }
     }
     return buffer.toString();
   }
 
-  Future<void> _speakWord(String word) async {
-    if (word.toLowerCase() == 'espace') return; // don't speak "espace"
-    await _tts.speak(word);
+  Future<void> _speakText(String text) async {
+    if (text.isEmpty || text.toLowerCase() == 'espace') return;
+    await _tts.speak(text);
   }
 
   Future<void> _speakPrediction(String? output) async {
@@ -157,7 +153,6 @@ class _TranslationScreenState extends State<TranslationScreen> {
         _lastSeenAutoOutput = t.autoOutput;
       }
     } else {
-      // Keep in sync even in word mode
       _lastSeenManualOutput = t.manualOutput;
       _lastSeenAutoOutput = t.autoOutput;
     }
@@ -186,60 +181,72 @@ class _TranslationScreenState extends State<TranslationScreen> {
       }
     }
 
-    // Apply "espace" → literal space display
     final displayedWord = _displayWord(predictedWord);
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      physics: const BouncingScrollPhysics(),
-      child: Column(
-        children: [
-          // ── Hero Prediction Panel ──
-          _buildHeroPanel(c, displayedWord, predictedWord, confidenceText,
-              confidenceValue, hasResult),
+    return Column(
+      children: [
+        // ── Fixed hero panel at top ──
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          child: _buildHeroPanel(c, displayedWord, predictedWord,
+              confidenceText, confidenceValue, hasResult, latestOutput),
+        ),
 
-          // ── Reading mode toggle (Mot / Phrase) ──
-          _buildReadingModeToggle(c),
+        // ── Scrollable content below ──
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            physics: const BouncingScrollPhysics(),
+            child: Column(
+              children: [
+                // Reading mode toggle
+                _buildReadingModeToggle(c),
 
-          // ── Phrase Bar (in phrase mode, always show; in word mode, show if populated) ──
-          if (_readingMode == ReadingMode.phrase || _phraseWords.isNotEmpty)
-            _buildPhraseBar(c),
+                // Phrase bar
+                if (_readingMode == ReadingMode.phrase ||
+                    _phraseWords.isNotEmpty)
+                  _buildPhraseBar(c),
 
-          // ── Status Row ──
-          _buildStatusRow(c, t, conn),
+                // Status row
+                _buildStatusRow(c, t, conn),
 
-          // ── Mode Toggle (Manuel / Temps reel) ──
-          _buildModeToggle(c, t),
+                // Mode toggle
+                _buildModeToggle(c, t),
 
-          // ── Active mode content (only one visible) ──
-          if (t.activeMode == TranslationMode.manual)
-            _buildManualSection(c, t, conn),
+                // Active mode content
+                if (t.activeMode == TranslationMode.manual)
+                  _buildManualSection(c, t, conn),
 
-          if (t.activeMode == TranslationMode.auto) ...[
-            _buildAutoSection(c, t),
-            if (t.autoHistory.isNotEmpty) _buildHistory(c, t),
-          ],
+                if (t.activeMode == TranslationMode.auto) ...[
+                  _buildAutoSection(c, t),
+                  if (t.autoHistory.isNotEmpty) _buildHistory(c, t),
+                ],
 
-          // ── Placeholder when no mode selected ──
-          if (t.activeMode == TranslationMode.none) _buildNoModeHint(c),
+                if (t.activeMode == TranslationMode.none) _buildNoModeHint(c),
 
-          const SizedBox(height: 24),
-        ],
-      ),
+                const SizedBox(height: 24),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 
-  Widget _buildHeroPanel(HarmonyColors c, String displayWord,
-      String rawWord, String confidence,
-      double confidenceValue, bool hasResult) {
-    // In phrase mode, show the accumulated phrase in the hero panel
+  Widget _buildHeroPanel(
+      HarmonyColors c,
+      String displayWord,
+      String rawWord,
+      String confidence,
+      double confidenceValue,
+      bool hasResult,
+      String? latestOutput) {
     final bool isPhraseMode = _readingMode == ReadingMode.phrase;
     final phraseText = _buildPhraseDisplay();
 
     return Container(
       width: double.infinity,
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
+      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
       decoration: BoxDecoration(
         gradient: hasResult
             ? LinearGradient(
@@ -267,9 +274,9 @@ class _TranslationScreenState extends State<TranslationScreen> {
             : null,
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           if (isPhraseMode && phraseText.isNotEmpty) ...[
-            // Phrase display
             Text(
               phraseText,
               textAlign: TextAlign.center,
@@ -282,7 +289,6 @@ class _TranslationScreenState extends State<TranslationScreen> {
             ),
             if (hasResult) ...[
               const SizedBox(height: 8),
-              // Show the latest word added
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -302,7 +308,6 @@ class _TranslationScreenState extends State<TranslationScreen> {
               ),
             ],
           ] else ...[
-            // Word display (default / word mode)
             Text(
               hasResult
                   ? (rawWord.toLowerCase() == 'espace' ? '⎵' : displayWord)
@@ -316,7 +321,7 @@ class _TranslationScreenState extends State<TranslationScreen> {
             ),
           ],
           if (hasResult && confidence.isNotEmpty) ...[
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
             SizedBox(
               width: 200,
               child: Column(
@@ -357,6 +362,43 @@ class _TranslationScreenState extends State<TranslationScreen> {
               ),
             ),
           ],
+          // Speak button row (always visible when there's a result)
+          if (hasResult) ...[
+            const SizedBox(height: 10),
+            GestureDetector(
+              onTap: () {
+                if (isPhraseMode && phraseText.isNotEmpty) {
+                  _speakText(phraseText);
+                } else {
+                  _speakPrediction(latestOutput);
+                }
+              },
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: c.primary.withAlpha(20),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: c.primary.withAlpha(40)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.volume_up_rounded, color: c.primary, size: 18),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Ecouter',
+                      style: TextStyle(
+                        color: c.primary,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
           if (!hasResult && (!isPhraseMode || phraseText.isEmpty)) ...[
             const SizedBox(height: 8),
             Text(
@@ -371,7 +413,7 @@ class _TranslationScreenState extends State<TranslationScreen> {
 
   Widget _buildReadingModeToggle(HarmonyColors c) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
+      padding: const EdgeInsets.only(bottom: 6, top: 4),
       child: Container(
         padding: const EdgeInsets.all(2),
         decoration: BoxDecoration(
@@ -466,7 +508,6 @@ class _TranslationScreenState extends State<TranslationScreen> {
   Widget _buildPhraseBar(HarmonyColors c) {
     final phraseDisplay = _buildPhraseDisplay();
     if (phraseDisplay.isEmpty && _readingMode == ReadingMode.phrase) {
-      // Show placeholder in phrase mode
       return GlassCard(
         child: Row(
           children: [
@@ -508,10 +549,8 @@ class _TranslationScreenState extends State<TranslationScreen> {
           const SizedBox(width: 8),
           // Speak phrase
           GestureDetector(
-            onTap: () async {
-              if (phraseDisplay.isNotEmpty) {
-                await _tts.speak(phraseDisplay);
-              }
+            onTap: () {
+              if (phraseDisplay.isNotEmpty) _speakText(phraseDisplay);
             },
             child: Container(
               padding: const EdgeInsets.all(6),
@@ -696,11 +735,18 @@ class _TranslationScreenState extends State<TranslationScreen> {
     );
   }
 
-  // ── Manual mode: diamond button layout ──
+  // ── Manual mode — clean row layout ──
 
   Widget _buildManualSection(
       HarmonyColors c, TranslationProvider t, ConnectionProvider conn) {
     final canAct = t.modelReady && conn.isConnected;
+    final canRec =
+        canAct && !t.isManualRecording && !t.manualInferenceInFlight;
+    final canStop = t.isManualRecording;
+    final canPredict =
+        canAct && t.hasManualFrames && !t.manualInferenceInFlight;
+    final canReset = !t.isManualRecording &&
+        (t.manualOutput != null || t.manualFrameCount > 0);
 
     return GlassCard(
       child: Column(
@@ -719,43 +765,106 @@ class _TranslationScreenState extends State<TranslationScreen> {
               activeColor: c.error,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
 
-          // Frame counter
+          // Frame counter + inference status
+          if (t.isManualRecording || t.manualFrameCount > 0) ...[
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: c.scaffold.withAlpha(120),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.timeline_rounded, color: c.textHint, size: 16),
+                  const SizedBox(width: 8),
+                  Text(
+                    '${t.manualFrameCount} frames capturees',
+                    style: TextStyle(
+                      color: c.textSecondary,
+                      fontSize: 13,
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    ),
+                  ),
+                  if (t.manualInferenceInFlight) ...[
+                    const Spacer(),
+                    SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation(c.accent),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Analyse...',
+                      style: TextStyle(color: c.accent, fontSize: 12),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
+
+          // ── Action buttons — clean row ──
           Row(
             children: [
-              Icon(Icons.timeline_rounded, color: c.textHint, size: 16),
-              const SizedBox(width: 6),
-              Text(
-                '${t.manualFrameCount} frames captures',
-                style: TextStyle(color: c.textSecondary, fontSize: 13),
+              // REC / STOP toggle
+              Expanded(
+                child: GradientButton(
+                  label: canStop ? 'Arreter' : 'Enregistrer',
+                  icon: canStop
+                      ? Icons.stop_rounded
+                      : Icons.fiber_manual_record_rounded,
+                  gradient: canStop
+                      ? LinearGradient(
+                          colors: [c.textSecondary, c.textHint],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        )
+                      : c.dangerGradient,
+                  onPressed:
+                      canStop ? t.stopRecording : canRec ? t.startRecording : null,
+                ),
               ),
-              if (t.manualInferenceInFlight) ...[
-                const SizedBox(width: 12),
-                SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation(c.accent),
+              const SizedBox(width: 8),
+              // PREDIRE
+              Expanded(
+                child: GradientButton(
+                  label: 'Predire',
+                  icon: Icons.psychology_rounded,
+                  gradient: c.primaryGradient,
+                  onPressed: canPredict ? () => t.predict() : null,
+                ),
+              ),
+              const SizedBox(width: 8),
+              // RESET (icon button)
+              AnimatedOpacity(
+                opacity: canReset ? 1.0 : 0.35,
+                duration: const Duration(milliseconds: 200),
+                child: GestureDetector(
+                  onTap: canReset ? t.resetManual : null,
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: c.surface,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: c.glassBorder),
+                    ),
+                    child:
+                        Icon(Icons.refresh_rounded, color: c.warning, size: 22),
                   ),
                 ),
-                const SizedBox(width: 6),
-                Text(
-                  'Analyse...',
-                  style: TextStyle(color: c.accent, fontSize: 12),
-                ),
-              ],
+              ),
             ],
           ),
-          const SizedBox(height: 16),
 
-          // ── Diamond button layout ──
-          _buildDiamondControls(c, t, canAct),
-
-          // Output (word mode only — phrase mode auto-appends)
-          if (t.manualOutput != null && _readingMode == ReadingMode.word) ...[
-            const SizedBox(height: 16),
+          // Output with speak + add-to-phrase buttons
+          if (t.manualOutput != null) ...[
+            const SizedBox(height: 14),
             _buildOutputRow(c, t.manualOutput!),
           ],
         ],
@@ -788,138 +897,33 @@ class _TranslationScreenState extends State<TranslationScreen> {
             ),
           ),
           const SizedBox(width: 8),
+          // Speak button (always active)
+          GestureDetector(
+            onTap: () => _speakPrediction(output),
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: c.primary.withAlpha(20),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child:
+                  Icon(Icons.volume_up_rounded, color: c.primary, size: 20),
+            ),
+          ),
+          const SizedBox(width: 6),
+          // Add to phrase
           GestureDetector(
             onTap: () => _addWordToPhrase(output),
             child: Container(
-              padding: const EdgeInsets.all(6),
+              padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
                 color: c.success.withAlpha(20),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(Icons.add_rounded, color: c.success, size: 18),
+              child: Icon(Icons.add_rounded, color: c.success, size: 20),
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  /// Diamond/losange layout: REC (north), PREDIRE (west), RESET (east),
-  /// STOP (south), TTS (center).
-  Widget _buildDiamondControls(
-      HarmonyColors c, TranslationProvider t, bool canAct) {
-    const double size = 220;
-    const double btnSize = 56;
-
-    final canRec =
-        canAct && !t.isManualRecording && !t.manualInferenceInFlight;
-    final canStop = t.isManualRecording;
-    final canPredict =
-        canAct && t.hasManualFrames && !t.manualInferenceInFlight;
-    final canReset = !t.isManualRecording &&
-        (t.manualOutput != null || t.manualFrameCount > 0);
-
-    return Center(
-      child: SizedBox(
-        width: size,
-        height: size,
-        child: Stack(
-          children: [
-            // REC — North
-            Positioned(
-              left: (size - btnSize) / 2,
-              top: 0,
-              child: _DiamondButton(
-                icon: Icons.fiber_manual_record_rounded,
-                label: 'REC',
-                color: c.error,
-                gradient: c.dangerGradient,
-                size: btnSize,
-                enabled: canRec,
-                onTap: canRec ? t.startRecording : null,
-              ),
-            ),
-            // PREDIRE — West
-            Positioned(
-              left: 0,
-              top: (size - btnSize) / 2,
-              child: _DiamondButton(
-                icon: Icons.psychology_rounded,
-                label: 'Predire',
-                color: c.accent,
-                gradient: c.primaryGradient,
-                size: btnSize,
-                enabled: canPredict,
-                onTap: canPredict ? () => t.predict() : null,
-              ),
-            ),
-            // RESET — East
-            Positioned(
-              right: 0,
-              top: (size - btnSize) / 2,
-              child: _DiamondButton(
-                icon: Icons.refresh_rounded,
-                label: 'Reset',
-                color: c.warning,
-                gradient: LinearGradient(
-                  colors: [c.warning, c.warning.withAlpha(180)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                size: btnSize,
-                enabled: canReset,
-                onTap: canReset ? t.resetManual : null,
-              ),
-            ),
-            // STOP — South
-            Positioned(
-              left: (size - btnSize) / 2,
-              bottom: 0,
-              child: _DiamondButton(
-                icon: Icons.stop_rounded,
-                label: 'Stop',
-                color: c.textSecondary,
-                gradient: LinearGradient(
-                  colors: [c.textSecondary, c.textHint],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                size: btnSize,
-                enabled: canStop,
-                onTap: canStop ? t.stopRecording : null,
-              ),
-            ),
-            // TTS — Center
-            Positioned(
-              left: (size - btnSize) / 2,
-              top: (size - btnSize) / 2,
-              child: _DiamondButton(
-                icon: _ttsEnabled
-                    ? Icons.volume_up_rounded
-                    : Icons.volume_off_rounded,
-                label: 'TTS',
-                color: c.primary,
-                gradient: _ttsEnabled
-                    ? c.successGradient
-                    : LinearGradient(
-                        colors: [c.surface, c.card],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                size: btnSize,
-                enabled: true,
-                outlined: !_ttsEnabled,
-                borderColor: c.glassBorder,
-                onTap: () {
-                  setState(() => _ttsEnabled = !_ttsEnabled);
-                  if (_ttsEnabled && t.manualOutput != null) {
-                    _speakPrediction(t.manualOutput);
-                  }
-                },
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -1021,45 +1025,10 @@ class _TranslationScreenState extends State<TranslationScreen> {
             ),
           ],
 
-          // Auto output (word mode only)
-          if (t.autoOutput != null && _readingMode == ReadingMode.word) ...[
+          // Auto output with speak + add buttons
+          if (t.autoOutput != null) ...[
             const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          c.success.withAlpha(20),
-                          c.accent.withAlpha(10),
-                        ],
-                      ),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: c.glassBorder),
-                    ),
-                    child: Text(
-                      _extractWord(t.autoOutput).toLowerCase() == 'espace'
-                          ? '(espace)'
-                          : t.autoOutput!,
-                      style: TextStyle(
-                        color: c.success,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                GradientButton(
-                  label: '+',
-                  compact: true,
-                  gradient: c.successGradient,
-                  onPressed: () => _addWordToPhrase(t.autoOutput),
-                ),
-              ],
-            ),
+            _buildOutputRow(c, t.autoOutput!),
           ],
         ],
       ),
@@ -1111,75 +1080,6 @@ class _TranslationScreenState extends State<TranslationScreen> {
             );
           }),
         ],
-      ),
-    );
-  }
-}
-
-/// A circular button used in the diamond/losange layout.
-class _DiamondButton extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final Color color;
-  final Gradient gradient;
-  final double size;
-  final bool enabled;
-  final bool outlined;
-  final Color? borderColor;
-  final VoidCallback? onTap;
-
-  const _DiamondButton({
-    required this.icon,
-    required this.label,
-    required this.color,
-    required this.gradient,
-    required this.size,
-    required this.enabled,
-    this.outlined = false,
-    this.borderColor,
-    this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final effectiveOpacity = enabled ? 1.0 : 0.35;
-
-    return AnimatedOpacity(
-      opacity: effectiveOpacity,
-      duration: const Duration(milliseconds: 200),
-      child: GestureDetector(
-        onTap: enabled ? onTap : null,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: size,
-              height: size,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: outlined ? null : gradient,
-                color: outlined ? Colors.transparent : null,
-                border: outlined
-                    ? Border.all(color: borderColor ?? color, width: 2)
-                    : null,
-                boxShadow: enabled && !outlined
-                    ? [
-                        BoxShadow(
-                          color: color.withAlpha(60),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        ),
-                      ]
-                    : null,
-              ),
-              child: Icon(
-                icon,
-                color: outlined ? color : Colors.white,
-                size: size * 0.42,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

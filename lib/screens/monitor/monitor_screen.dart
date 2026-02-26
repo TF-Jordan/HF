@@ -13,31 +13,42 @@ class MonitorScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final conn = context.watch<ConnectionProvider>();
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      physics: const BouncingScrollPhysics(),
-      child: Column(
-        children: [
-          const LabelingPanel(),
-          DeviceCard(
-            title: 'Main Gauche',
-            handIcon: Icons.back_hand_rounded,
-            flex: conn.flex1,
-            imu: conn.imu1,
-            ypr: conn.ypr1,
-            connected: conn.esp1Connected,
+    return Column(
+      children: [
+        // Fixed collection panel (always visible)
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16),
+          child: LabelingPanel(),
+        ),
+        // Scrollable device cards below
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            physics: const BouncingScrollPhysics(),
+            child: Column(
+              children: [
+                DeviceCard(
+                  title: 'Main Gauche',
+                  handIcon: Icons.back_hand_rounded,
+                  flex: conn.flex1,
+                  imu: conn.imu1,
+                  ypr: conn.ypr1,
+                  connected: conn.esp1Connected,
+                ),
+                DeviceCard(
+                  title: 'Main Droite',
+                  handIcon: Icons.front_hand_rounded,
+                  flex: conn.flex2,
+                  imu: conn.imu2,
+                  ypr: conn.ypr2,
+                  connected: conn.esp2Connected,
+                ),
+                const SizedBox(height: 24),
+              ],
+            ),
           ),
-          DeviceCard(
-            title: 'Main Droite',
-            handIcon: Icons.front_hand_rounded,
-            flex: conn.flex2,
-            imu: conn.imu2,
-            ypr: conn.ypr2,
-            connected: conn.esp2Connected,
-          ),
-          const SizedBox(height: 24),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

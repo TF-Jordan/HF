@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:web_socket_channel/web_socket_channel.dart';
@@ -11,23 +10,24 @@ typedef OnError = void Function(String error);
 
 /// Manages the WebSocket connection to the ESP32 master device.
 ///
-/// Connection status is only set to `true` when real data is received,
-/// not just when the socket opens. A timeout fires if no data arrives
-/// within [_connectTimeoutMs] after opening.
+/// Uses [channel.ready] to verify the TCP + WebSocket handshake before
+/// reporting "connected". This prevents the UI from showing a false
+/// "Connecte" when the ESP32 is unreachable.
 class WebSocketService {
-  static const int _connectTimeoutMs = 5000;
-  static const int _dataTimeoutMs = 3000;
-
   WebSocketChannel? _channel;
   bool _connected = false;
-  Timer? _connectTimer;
-  Timer? _dataTimer;
-  OnConnectionChanged? _onConnectionChanged;
-  OnError? _onError;
+
+  /// Session counter — incremented on every connect()/disconnect() to
+  /// ignore stale callbacks from a previous channel's onDone/onError.
+  int _session = 0;
 
   bool get isConnected => _connected;
 
   /// Connect to the ESP32 at the given IP address.
+  ///
+  /// [onConnectionChanged] is called with `true` only after the WebSocket
+  /// handshake completes successfully. If the server is unreachable,
+  /// [onError] is called with a user-friendly message instead.
   void connect({
     required String ip,
     int port = 81,
@@ -37,41 +37,15 @@ class WebSocketService {
     OnError? onError,
   }) {
     disconnect();
-    _onConnectionChanged = onConnectionChanged;
-    _onError = onError;
+    final session = ++_session;
 
     try {
       final uri = Uri.parse('ws://$ip:$port');
       _channel = WebSocketChannel.connect(uri);
 
-      // Do NOT set _connected = true here.
-      // Wait for actual data before confirming connection.
-
-      // Start a timeout: if no data arrives within the timeout, mark as failed.
-      _connectTimer?.cancel();
-      _connectTimer = Timer(
-        const Duration(milliseconds: _connectTimeoutMs),
-        () {
-          if (!_connected) {
-            // No data received within timeout — connection failed.
-            disconnect();
-            onConnectionChanged(false);
-          }
-        },
-      );
-
       _channel!.stream.listen(
         (data) {
-          // First data received — NOW we are truly connected.
-          if (!_connected) {
-            _connected = true;
-            _connectTimer?.cancel();
-            onConnectionChanged(true);
-          }
-
-          // Reset the data timeout (heartbeat).
-          _resetDataTimer(onConnectionChanged);
-
+          if (session != _session) return;
           if (data is String) {
             onJson(data);
           } else if (data is Uint8List) {
@@ -79,53 +53,65 @@ class WebSocketService {
           }
         },
         onError: (error) {
-          _onError?.call(error.toString());
-          _setDisconnected();
+          if (session != _session) return;
+          _connected = false;
+          onError?.call(_friendlyError(error));
+          onConnectionChanged(false);
         },
         onDone: () {
-          _setDisconnected();
+          if (session != _session) return;
+          _connected = false;
+          onConnectionChanged(false);
         },
       );
+
+      // Wait for the actual TCP + WebSocket handshake to complete
+      // before reporting "connected".
+      _channel!.ready.timeout(const Duration(seconds: 5)).then((_) {
+        if (session != _session) return;
+        _connected = true;
+        onConnectionChanged(true);
+      }).catchError((error) {
+        if (session != _session) return;
+        _connected = false;
+        _channel?.sink.close();
+        _channel = null;
+        onError?.call(_friendlyError(error));
+        onConnectionChanged(false);
+      });
     } catch (e) {
       _connected = false;
-      final msg = e.toString();
-      onError?.call(msg);
+      onError?.call(e.toString());
       onConnectionChanged(false);
-    }
-  }
-
-  /// Reset the data timeout timer. If no data arrives for [_dataTimeoutMs],
-  /// the connection is considered lost.
-  void _resetDataTimer(OnConnectionChanged onConnectionChanged) {
-    _dataTimer?.cancel();
-    _dataTimer = Timer(
-      const Duration(milliseconds: _dataTimeoutMs),
-      () {
-        if (_connected) {
-          _setDisconnected();
-        }
-      },
-    );
-  }
-
-  void _setDisconnected() {
-    final wasConnected = _connected;
-    _connected = false;
-    _connectTimer?.cancel();
-    _dataTimer?.cancel();
-    _channel?.sink.close();
-    _channel = null;
-    if (wasConnected) {
-      _onConnectionChanged?.call(false);
     }
   }
 
   /// Close the current connection.
   void disconnect() {
-    _connectTimer?.cancel();
-    _dataTimer?.cancel();
+    _session++;
     _channel?.sink.close();
     _channel = null;
     _connected = false;
+  }
+
+  String _friendlyError(dynamic error) {
+    final msg = error.toString();
+    if (msg.contains('Connection refused')) {
+      return 'Connexion refusee — verifiez que l\'ESP32 est allume';
+    }
+    if (msg.contains('No route to host') ||
+        msg.contains('Network is unreachable')) {
+      return 'Hote injoignable — verifiez le WiFi du gant';
+    }
+    if (msg.contains('TimeoutException')) {
+      return 'Timeout — aucune reponse (verifiez IP et WiFi)';
+    }
+    if (msg.contains('Connection timed out')) {
+      return 'Timeout — l\'ESP32 ne repond pas';
+    }
+    if (msg.contains('SocketException')) {
+      return 'Erreur reseau — verifiez la connexion WiFi';
+    }
+    return 'Erreur connexion: $msg';
   }
 }
