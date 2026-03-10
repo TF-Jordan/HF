@@ -6,13 +6,23 @@ class AuthRepository {
 
   AuthRepository(this._apiService);
 
+  /// Extract token from response, handling both plain text and JSON-quoted strings
+  String _extractToken(dynamic data) {
+    String token = data.toString().trim();
+    // Remove surrounding quotes if present (WebFlux JSON-serialized String)
+    if (token.startsWith('"') && token.endsWith('"')) {
+      token = token.substring(1, token.length - 1);
+    }
+    return token;
+  }
+
   /// Login with email and password. Returns JWT token.
   Future<String> login(String email, String password) async {
     final response = await _apiService.get(
       ApiConstants.login,
       queryParameters: {'email': email, 'password': password},
     );
-    final token = response.data as String;
+    final token = _extractToken(response.data);
     await _apiService.saveToken(token);
     return token;
   }
@@ -33,7 +43,7 @@ class AuthRepository {
         'status': status,
       },
     );
-    final token = response.data as String;
+    final token = _extractToken(response.data);
     await _apiService.saveToken(token);
     return token;
   }
