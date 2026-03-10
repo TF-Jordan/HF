@@ -33,8 +33,8 @@ class _MemberListScreenState extends ConsumerState<MemberListScreen> {
         title: const Text('Members'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.more_vert),
-            onPressed: () {},
+            icon: const Icon(Icons.refresh),
+            onPressed: () => ref.refresh(allMembersProvider),
           ),
         ],
       ),

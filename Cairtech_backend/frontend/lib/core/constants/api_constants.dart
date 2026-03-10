@@ -30,4 +30,48 @@ class ApiConstants {
 
   // ── Roles ─────────────────────────────────────────────────
   static const String roles = '/role';
+  static const String rolesInit = '/role/init';
+  static String roleByName(String name) => '/role/name/$name';
+  static String rolesByUser(String userId) => '/role/user/$userId';
+
+  // ── Bible Clubs (CRUD) ──────────────────────────────────
+  static const String bibleClubs = '/bbc';
+  static String bibleClubById(String id) => '/bbc/$id';
+  static String bibleClubByCode(String code) => '/bbc/code/$code';
+
+  // ── Daily Verse ─────────────────────────────────────────
+  static const String dailyVerse = '/daily-verse';
+  static const String dailyVerseLatest = '/daily-verse/latest';
+  static String dailyVerseById(String id) => '/daily-verse/$id';
+
+  // ── Publications ────────────────────────────────────────
+  static const String publications = '/publication';
+  static String publicationById(String id) => '/publication/$id';
+  static String publicationsByStatus(String status) => '/publication/status/$status';
+  static String publicationValidate(String id) => '/publication/$id/validate';
+
+  // ── Notifications ───────────────────────────────────────
+  static const String notifications = '/notification';
+  static String notificationById(String id) => '/notification/$id';
+  static String notificationsByRecipient(String r) => '/notification/recipient/$r';
+  static String notificationsUnread(String r) => '/notification/recipient/$r/unread';
+  static String notificationMarkRead(String id) => '/notification/$id/read';
+
+  // ── School Year ─────────────────────────────────────────
+  static const String schoolYears = '/school-year';
+  static const String schoolYearCurrent = '/school-year/current';
+  static String schoolYearById(String id) => '/school-year/$id';
+
+  // ── Activity Reports ────────────────────────────────────
+  static const String activityReports = '/activity-report';
+  static String activityReportById(String id) => '/activity-report/$id';
+  static String activityReportValidate(String id) => '/activity-report/$id/validate';
+
+  // ── Activity Types ──────────────────────────────────────
+  static const String activityTypes = '/activity-type';
+  static String activityTypeById(String id) => '/activity-type/$id';
+
+  // ── Permissions ─────────────────────────────────────────
+  static const String permissions = '/permission';
+  static String permissionById(String id) => '/permission/$id';
 }

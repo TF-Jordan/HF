@@ -6,9 +6,16 @@ import '../../data/repositories/member_repository.dart';
 import '../../data/repositories/bible_club_repository.dart';
 import '../../data/repositories/admin_repository.dart';
 import '../../data/repositories/incharge_repository.dart';
+import '../../data/repositories/daily_verse_repository.dart';
+import '../../data/repositories/notification_repository.dart';
+import '../../data/repositories/publication_repository.dart';
 import '../../data/models/user_model.dart';
 import '../../data/models/member_model.dart';
+import '../../data/models/bible_club_model.dart';
 import '../../data/models/incharge_model.dart';
+import '../../data/models/daily_verse_model.dart';
+import '../../data/models/notification_model.dart';
+import '../../data/models/publication_model.dart';
 
 // ── Core Services ───────────────────────────────────────────
 
@@ -40,6 +47,18 @@ final adminRepositoryProvider = Provider<AdminRepository>((ref) {
 
 final inchargeRepositoryProvider = Provider<InchargeRepository>((ref) {
   return InchargeRepository(ref.read(apiServiceProvider));
+});
+
+final dailyVerseRepositoryProvider = Provider<DailyVerseRepository>((ref) {
+  return DailyVerseRepository(ref.read(apiServiceProvider));
+});
+
+final notificationRepositoryProvider = Provider<NotificationRepository>((ref) {
+  return NotificationRepository(ref.read(apiServiceProvider));
+});
+
+final publicationRepositoryProvider = Provider<PublicationRepository>((ref) {
+  return PublicationRepository(ref.read(apiServiceProvider));
 });
 
 // ── Auth State ──────────────────────────────────────────────
@@ -161,4 +180,47 @@ final membersByBbcProvider =
 final allInChargesProvider = FutureProvider<List<InchargeModel>>((ref) async {
   final repo = ref.read(inchargeRepositoryProvider);
   return repo.getAllInCharges();
+});
+
+// ── Bible Clubs State ───────────────────────────────────────
+
+final allBibleClubsProvider = FutureProvider<List<BibleClubModel>>((ref) async {
+  final repo = ref.read(bibleClubRepositoryProvider);
+  return repo.getAllBibleClubs();
+});
+
+// ── Daily Verse State ───────────────────────────────────────
+
+final latestVerseProvider = FutureProvider<DailyVerseModel?>((ref) async {
+  try {
+    final repo = ref.read(dailyVerseRepositoryProvider);
+    return await repo.getLatest();
+  } catch (_) {
+    return null;
+  }
+});
+
+final allVersesProvider = FutureProvider<List<DailyVerseModel>>((ref) async {
+  final repo = ref.read(dailyVerseRepositoryProvider);
+  return repo.getAll();
+});
+
+// ── Notifications State ─────────────────────────────────────
+
+final allNotificationsProvider = FutureProvider<List<NotificationModel>>((ref) async {
+  final repo = ref.read(notificationRepositoryProvider);
+  return repo.getAll();
+});
+
+final unreadNotificationsProvider =
+    FutureProvider.family<List<NotificationModel>, String>((ref, recipient) async {
+  final repo = ref.read(notificationRepositoryProvider);
+  return repo.getUnread(recipient);
+});
+
+// ── Publications State ──────────────────────────────────────
+
+final allPublicationsProvider = FutureProvider<List<PublicationModel>>((ref) async {
+  final repo = ref.read(publicationRepositoryProvider);
+  return repo.getAll();
 });

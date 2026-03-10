@@ -12,6 +12,7 @@ class HomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authProvider);
     final user = authState.user;
+    final latestVerseAsync = ref.watch(latestVerseProvider);
 
     return Scaffold(
       backgroundColor: AppColors.scaffoldBackground,
@@ -26,12 +27,7 @@ class HomeScreen extends ConsumerWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.notifications_outlined),
-            onPressed: () {
-              // TODO: Notifications (backend not ready yet)
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Notifications - bientôt disponible')),
-              );
-            },
+            onPressed: () => context.push('/notifications'),
           ),
         ],
       ),
@@ -46,7 +42,7 @@ class HomeScreen extends ConsumerWidget {
               height: 200,
               child: PageView(
                 children: [
-                  _buildDailyVerseCard(context),
+                  _buildDailyVerseCard(context, latestVerseAsync),
                   _buildMeetingsCard(context),
                 ],
               ),
@@ -77,7 +73,7 @@ class HomeScreen extends ConsumerWidget {
                   ),
                 ),
                 TextButton(
-                  onPressed: () {},
+                  onPressed: () => context.push('/members'),
                   child: const Text('View All'),
                 ),
               ],
@@ -91,9 +87,7 @@ class HomeScreen extends ConsumerWidget {
               iconColor: AppColors.primary,
               title: 'Bible Daily Verse',
               subtitle: 'Read and share today\'s scripture and reflections.',
-              onTap: () {
-                // TODO: Daily verse screen
-              },
+              onTap: () => context.push('/daily-verse'),
             ),
             const SizedBox(height: 12),
 
@@ -137,9 +131,7 @@ class HomeScreen extends ConsumerWidget {
               iconColor: AppColors.primary,
               title: 'Meetings',
               subtitle: 'Schedule, manage, and track group attendance.',
-              onTap: () {
-                // TODO: Meetings screen (backend not ready)
-              },
+              onTap: () => context.push('/activity-reports'),
             ),
           ],
         ),
@@ -147,62 +139,70 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildDailyVerseCard(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(right: 12),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        image: const DecorationImage(
-          image: AssetImage('assets/images/verse_bg.jpg'),
-          fit: BoxFit.cover,
-          colorFilter: ColorFilter.mode(
-            Colors.black45,
-            BlendMode.darken,
+  Widget _buildDailyVerseCard(BuildContext context, AsyncValue latestVerseAsync) {
+    String verseText = '"Your word is a lamp to my feet and a light to my path."';
+    String verseRef = '— Psalm 119:105';
+    latestVerseAsync.whenData((verse) {
+      if (verse != null) {
+        verseText = '"${verse.verse}"';
+        verseRef = '— ${verse.reference}';
+      }
+    });
+
+    return GestureDetector(
+      onTap: () => context.push('/daily-verse'),
+      child: Container(
+        margin: const EdgeInsets.only(right: 12),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [AppColors.primaryDark, AppColors.primary],
           ),
         ),
-        color: AppColors.primaryDark,
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: AppColors.primary,
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: const Text(
-                'VERSE OF THE DAY',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: const Text(
+                  'VERSE OF THE DAY',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 12),
-            const Text(
-              'Daily Verse',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
+              const SizedBox(height: 12),
+              const Text(
+                'Daily Verse',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-            ),
-            const SizedBox(height: 4),
-            const Text(
-              '"Your word is a lamp to my feet and a light to my path." — Psalm 119:105',
-              style: TextStyle(
-                color: Colors.white70,
-                fontSize: 13,
+              const SizedBox(height: 4),
+              Text(
+                '$verseText $verseRef',
+                style: const TextStyle(
+                  color: Colors.white70,
+                  fontSize: 13,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -366,7 +366,7 @@ class HomeScreen extends ConsumerWidget {
             title: const Text('Mon Profil'),
             onTap: () {
               Navigator.pop(context);
-              // TODO: Profile screen
+              context.push('/profile');
             },
           ),
           const Divider(),

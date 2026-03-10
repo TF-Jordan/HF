@@ -74,25 +74,27 @@ class SettingsScreen extends ConsumerWidget {
           _buildSettingsItem(
             icon: Icons.person_outline,
             title: 'Mon Profil',
-            onTap: () {
-              // TODO: Profile screen
-            },
+            onTap: () => context.push('/profile'),
           ),
           _buildSettingsItem(
             icon: Icons.notifications_outlined,
             title: 'Notifications',
-            onTap: () {},
+            onTap: () => context.push('/notifications'),
           ),
           _buildSettingsItem(
             icon: Icons.language,
             title: 'Langue',
             trailing: 'Français',
-            onTap: () {},
+            onTap: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Sélection de langue - prochaine version')),
+              );
+            },
           ),
           _buildSettingsItem(
             icon: Icons.info_outline,
             title: 'À propos',
-            onTap: () {},
+            onTap: () => context.push('/about'),
           ),
           const SizedBox(height: 24),
           _buildSettingsItem(

@@ -53,7 +53,26 @@ class _ClubDetailsScreenState extends ConsumerState<ClubDetailsScreen>
         actions: [
           PopupMenuButton<String>(
             onSelected: (value) {
-              // TODO: Handle menu actions
+              switch (value) {
+                case 'intercession':
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Intercession - prochaine version')),
+                  );
+                  break;
+                case 'evangelism':
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Evangelism & Discipleship - prochaine version')),
+                  );
+                  break;
+                case 'finances':
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Finances - prochaine version')),
+                  );
+                  break;
+                case 'settings':
+                  context.push('/settings');
+                  break;
+              }
             },
             itemBuilder: (context) => [
               const PopupMenuItem(
