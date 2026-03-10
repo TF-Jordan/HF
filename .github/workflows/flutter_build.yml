@@ -11,6 +11,8 @@ jobs:
       run:
         working-directory: .
     steps:
+      - name: change_directory
+        uses: cd ./Cairtech_backend/frontend
       - name: Checkout
         uses: actions/checkout@v4
       - name: Setup Java

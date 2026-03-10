@@ -2,6 +2,7 @@ package com.bbc.cairtech.controller.inChargeController;
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -29,7 +30,7 @@ public class InChargeController {
     }
 
     @PostMapping("/member")
-    public Mono<String> createMember(MemberEntityRecord memberEntityRecord) {
+    public Mono<String> createMember(@RequestBody MemberEntityRecord memberEntityRecord) {
         return genServCreation.createMember(memberEntityRecord);
     }
 

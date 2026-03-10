@@ -51,7 +51,7 @@ public class MemberController {
 
     @PostMapping()
     @Operation(summary = "Ajouter un membre")
-    public Mono<String> addMember(MemberEntityRecord memberEntity) {
+    public Mono<String> addMember(@RequestBody MemberEntityRecord memberEntity) {
         System.out.println(memberEntity);
         return memberEntityService.createMember(memberEntity);
     }

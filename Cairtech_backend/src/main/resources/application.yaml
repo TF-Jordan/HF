@@ -4,12 +4,12 @@ spring:
   expiration: 86400000
   secretKey: "secret"
   admin:
-    email: ${admin-email}
-    password: ${admin-password}
-    phoneNumber: ${admin-phoneNumber}
+    email: ${admin-email:admin@cairtech.com}
+    password: ${admin-password:admin123}
+    phoneNumber: ${admin-phoneNumber:0000000000}
 
   r2dbc:
-    url: r2dbc:postgresql://localhost:5433/cairtech
+    url: r2dbc:postgresql://localhost:5432/cairtech
     username: postgres
     password: adminuser
 
