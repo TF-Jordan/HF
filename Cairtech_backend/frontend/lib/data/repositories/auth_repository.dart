@@ -18,9 +18,9 @@ class AuthRepository {
 
   /// Login with email and password. Returns JWT token.
   Future<String> login(String email, String password) async {
-    final response = await _apiService.get(
+    final response = await _apiService.post(
       ApiConstants.login,
-      queryParameters: {'email': email, 'password': password},
+      data: {'email': email, 'password': password},
     );
     final token = _extractToken(response.data);
     await _apiService.saveToken(token);

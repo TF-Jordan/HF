@@ -147,29 +147,25 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   String _parseError(dynamic e) {
     final msg = e.toString();
-    if (msg.contains('401')) return 'Email ou mot de passe incorrect';
-    if (msg.contains('409') || msg.contains('already exists')) {
+    // Try to extract HTTP status code from DioException
+    int? statusCode;
+    try {
+      statusCode = (e as dynamic).response?.statusCode as int?;
+    } catch (_) {}
+
+    if (statusCode == 401 || msg.contains('401')) {
+      return 'Email ou mot de passe incorrect';
+    }
+    if (statusCode == 409 || msg.contains('409')) {
       return 'Cet email existe déjà';
     }
     if (msg.contains('SocketException') || msg.contains('Connection refused')) {
       return 'Impossible de se connecter au serveur';
     }
-    // Extract server error message if available from DioException
-    if (e is Exception && msg.contains('500')) {
-      // Try to get the error body message
-      try {
-        final dioErr = e as dynamic;
-        final data = dioErr.response?.data;
-        if (data is Map && data['message'] != null) {
-          return data['message'].toString();
-        }
-        if (data is Map && data['error'] != null) {
-          return data['error'].toString();
-        }
-      } catch (_) {}
-      return 'Erreur serveur. Vérifiez les logs du backend.';
+    if (statusCode == 500 || msg.contains('500')) {
+      return 'Erreur serveur. Réessayez plus tard.';
     }
-    return 'Une erreur est survenue: ${msg.length > 100 ? msg.substring(0, 100) : msg}';
+    return 'Une erreur est survenue';
   }
 }
 
