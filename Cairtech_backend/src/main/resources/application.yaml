@@ -1,0 +1,21 @@
+spring:
+  application:
+    name: cairtech
+  expiration: 86400000
+  secretKey: "secret"
+  admin:
+    email: ${admin-email}
+    password: ${admin-password}
+    phoneNumber: ${admin-phoneNumber}
+
+  r2dbc:
+    url: r2dbc:postgresql://localhost:5433/cairtech
+    username: postgres
+    password: adminuser
+
+logging:
+  level:
+    com.fasterxml.jackson: DEBUG
+    org.springframework.data: DEBUG
+    org.springframework.web: DEBUG
+    org.springframework.web.servlet.mvc.method.annotation: TRACE
