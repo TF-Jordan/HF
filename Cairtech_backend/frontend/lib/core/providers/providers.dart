@@ -94,14 +94,15 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   Future<void> checkAuth() async {
     state = state.copyWith(status: AuthStatus.loading);
-    final isAuth = await _authService.isAuthenticated();
-    if (isAuth) {
-      final claims = await _authService.getCurrentUser();
-      if (claims != null) {
-        final user = UserModel.fromJson(claims);
+    try {
+      final isAuth = await _authService.isAuthenticated();
+      if (isAuth) {
+        final user = await _tryDecodeUser();
         state = state.copyWith(status: AuthStatus.authenticated, user: user);
         return;
       }
+    } catch (_) {
+      // Token check failed
     }
     state = state.copyWith(status: AuthStatus.unauthenticated);
   }
@@ -110,8 +111,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
     state = state.copyWith(status: AuthStatus.loading, error: null);
     try {
       await _authRepo.login(email, password);
-      final claims = await _authService.getCurrentUser();
-      final user = claims != null ? UserModel.fromJson(claims) : null;
+      // HTTP succeeded + token saved → user IS authenticated
+      final user = await _tryDecodeUser();
       state = state.copyWith(status: AuthStatus.authenticated, user: user);
     } catch (e) {
       state = state.copyWith(
@@ -129,8 +130,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
         password: password,
         phoneNumber: phone,
       );
-      final claims = await _authService.getCurrentUser();
-      final user = claims != null ? UserModel.fromJson(claims) : null;
+      // HTTP succeeded + token saved → user IS authenticated
+      final user = await _tryDecodeUser();
       state = state.copyWith(status: AuthStatus.authenticated, user: user);
     } catch (e) {
       state = state.copyWith(
@@ -138,6 +139,20 @@ class AuthNotifier extends StateNotifier<AuthState> {
         error: _parseError(e),
       );
     }
+  }
+
+  /// Try to decode the stored JWT into a UserModel.
+  /// Returns null if decoding fails for any reason (never throws).
+  Future<UserModel?> _tryDecodeUser() async {
+    try {
+      final claims = await _authService.getCurrentUser();
+      if (claims != null) {
+        return UserModel.fromJson(claims);
+      }
+    } catch (_) {
+      // JWT decoding or UserModel parsing failed — not critical
+    }
+    return null;
   }
 
   Future<void> logout() async {

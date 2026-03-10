@@ -1,8 +1,18 @@
+import 'dart:io' show Platform;
+
 class ApiConstants {
   ApiConstants._();
 
   // ── Base URL ──────────────────────────────────────────────
-  static const String baseUrl = 'http://10.0.2.2:8080'; // Android emulator -> localhost
+  static const String _port = '8080';
+
+  /// Android emulator uses 10.0.2.2 to reach host's localhost.
+  /// Desktop (Linux, macOS, Windows) uses localhost directly.
+  static String get baseUrl {
+    if (Platform.isAndroid) return 'http://10.0.2.2:$_port';
+    return 'http://localhost:$_port';
+  }
+
   static const String apiPrefix = '/cairtech/api';
   static String get apiUrl => '$baseUrl$apiPrefix';
 

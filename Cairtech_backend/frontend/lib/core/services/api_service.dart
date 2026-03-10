@@ -8,6 +8,9 @@ class ApiService {
 
   static const String _tokenKey = 'jwt_token';
 
+  /// In-memory fallback if FlutterSecureStorage fails (e.g. Linux without libsecret)
+  String? _memoryToken;
+
   ApiService() {
     _dio = Dio(
       BaseOptions(
@@ -32,7 +35,6 @@ class ApiService {
         },
         onError: (error, handler) {
           if (error.response?.statusCode == 401) {
-            // Token expired or invalid
             clearToken();
           }
           return handler.next(error);
@@ -44,15 +46,35 @@ class ApiService {
   // ── Token Management ──────────────────────────────────────
 
   Future<void> saveToken(String token) async {
-    await _storage.write(key: _tokenKey, value: token);
+    _memoryToken = token;
+    try {
+      await _storage.write(key: _tokenKey, value: token);
+    } catch (_) {
+      // SecureStorage unavailable (Linux without libsecret, etc.)
+      // Token is still stored in memory
+    }
   }
 
   Future<String?> getToken() async {
-    return await _storage.read(key: _tokenKey);
+    try {
+      final stored = await _storage.read(key: _tokenKey);
+      if (stored != null) {
+        _memoryToken = stored;
+        return stored;
+      }
+    } catch (_) {
+      // SecureStorage unavailable, use memory fallback
+    }
+    return _memoryToken;
   }
 
   Future<void> clearToken() async {
-    await _storage.delete(key: _tokenKey);
+    _memoryToken = null;
+    try {
+      await _storage.delete(key: _tokenKey);
+    } catch (_) {
+      // SecureStorage unavailable
+    }
   }
 
   Future<bool> hasToken() async {
