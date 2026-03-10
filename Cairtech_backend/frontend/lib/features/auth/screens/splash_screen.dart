@@ -74,7 +74,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
               ),
               const SizedBox(height: 24),
               const Text(
-                'CHF Bible Club',
+                'Bible Club',
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 28,
@@ -83,7 +83,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
               ),
               const SizedBox(height: 8),
               Text(
-                'Cairtech Management',
+                'Cairtech',
                 style: TextStyle(
                   color: Colors.white.withOpacity(0.8),
                   fontSize: 16,
